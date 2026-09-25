@@ -1,355 +1,321 @@
 # Proyecto Transversal
 
-A cloud-native visit management system for residential communities, designed to demonstrate production-ready AWS architecture patterns.
+A cloud-native visit management system for residential communities, designed as a hands-on AWS Cloud Engineering laboratory and portfolio project.
 
-## Problem Statement
+## Project Mission
 
-Residential communities in Mexico face significant friction when managing visitor access:
+The residential visitor-management domain is intentionally small. The engineering depth is the point.
 
-- **Imprecise addresses**: Residents often don't know exact addresses, only unit numbers ("House 15" or "Oak Street")
-- **Manual coordination**: Guards must call residents to verify visitor information
-- **No tracking**: No visibility into visitor history or validation times
-- **Cognitive overhead**: Residents waste time coordinating visits via WhatsApp groups
+This project is designed to demonstrate the ability to **design, provision, secure, operate, observe, and evolve a distributed application on AWS**.
 
-Current solutions rely on manual processes, phone calls, and paper logs, creating delays and security gaps.
+The primary learning areas are:
 
-## Project Objective
+- Serverless architecture
+- DynamoDB access-pattern-first modeling
+- Least-privilege IAM
+- Event-driven and asynchronous processing
+- Reliability and failure handling
+- Observability
+- Infrastructure as Code
+- CI/CD
+- Security and privacy
+- Cost awareness
 
-This project demonstrates **production-ready cloud-native architecture** on AWS, with a focus on:
+The product domain is a vehicle for exercising those capabilities.
 
-- **Learning goal**: Achieve fluency in core AWS services through hands-on implementation
-- **Portfolio goal**: Showcase architectural decision-making and trade-off analysis
-- **Product goal**: Solve a real problem with a minimal but complete solution
+> **Engineering principle:** a feature is not complete when the code works locally. It is complete when its implementation, infrastructure, security, tests, observability, failure behavior, and deployment path are understood.
 
-**Nature**: Hypothetical product designed for portfolio purposes, but built with production-grade patterns and best practices.
+## Problem Domain
 
-## Solution Overview
+Residential communities often manage visitors through phone calls, WhatsApp messages, paper logs, and manual coordination.
 
-### Primary Flow (QR-based)
+The system models a minimal digital flow:
 
-1. **Resident registers visit** → System generates unique access code and public URL
-2. **Resident shares URL** via WhatsApp/Messenger with visitor
-3. **Visitor opens URL** → Web page displays QR code + visit information
-4. **Guard scans QR** → Validates visitor information (name, count, vehicle)
-5. **Guard approves** → Resident receives push notification
+1. A resident registers an expected visitor.
+2. The system generates an access code and public URL.
+3. The resident shares the URL with the visitor.
+4. The visitor presents the generated QR code at the entrance.
+5. A guard validates the visit.
+6. The resident receives an asynchronous notification.
 
-### Alternative Flow (no QR/cellphone)
+A second flow supports visitors without a usable phone:
 
-1. **Guard searches** by visitor name or unit number
-2. **System searches** within ±90min window from current time
-3. **Exact match required** to show critical resident data
-4. **No match** → System protects privacy, shows minimal information
-5. **Guard calls resident** directly to confirm
+1. The guard searches by visitor name or unit.
+2. The system searches the expected-visit window.
+3. Sensitive resident information is only exposed after an exact match.
+4. If the guard cannot establish a safe match, the resident is contacted directly.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Client Layer                             │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ Resident App │  │  Guard App   │  │ Visitor Web (S3+CF)  │  │
-│  │ (React Ntv)  │  │ (React Ntv)  │  │   (HTML/JS/QR)       │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘  │
-└─────────┼──────────────────┼─────────────────────┼──────────────┘
-          │                  │                     │
-          └──────────────────┼─────────────────────┘
-                             │
-                    ┌────────▼────────┐
-                    │  API Gateway    │
-                    │  (REST + CORS)  │
-                    └────────┬────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-     ┌────────▼──────┐ ┌────▼─────┐ ┌──────▼──────┐
-     │  Auth Lambda  │ │ Business │ │  Public     │
-     │  (Cognito)    │ │ Lambdas  │ │  Lambda     │
-     └───────────────┘ └────┬─────┘ └──────┬──────┘
-                            │              │
-                   ┌────────┼────────┐     │
-                   │        │        │     │
-              ┌────▼──┐ ┌───▼──┐ ┌──▼─────▼──┐
-              │Dynamo │ │ SQS  │ │   S3      │
-              │  DB   │ │      │ │ (images)  │
-              └───────┘ └──┬───┘ └───────────┘
-                           │
-                      ┌────▼────┐
-                      │  SNS    │
-                      │ (push)  │
-                      └─────────┘
+Phase 1 intentionally focuses on cloud/backend engineering before mobile clients are introduced.
 
+```
+                         ┌─────────────────────┐
+                         │   Visitor Web       │
+                         │   S3 + CloudFront   │
+                         └──────────┬──────────┘
+                                    │
+Resident / Guard ────────┐         │
+                          ▼         ▼
+                    ┌───────────────────┐
+                    │    API Gateway    │
+                    │       REST        │
+                    └─────────┬─────────┘
+                              │
+                ┌─────────────┼─────────────┐
+                ▼             ▼             ▼
+          Auth / Cognito  Business      Public
+                          Lambdas       Lambda
+                              │
+                    ┌─────────┼─────────┐
+                    ▼         ▼         ▼
+                DynamoDB     SQS    Scheduler
+                              │         │
+                              ▼         ▼
+                         Notification  Expiration
+                           Worker       Lambda
+                              │         │
+                              ▼         ▼
+                             SNS     DynamoDB
+```
+
+Cross-cutting capabilities:
+
+```
      ┌─────────────────────────────────────────┐
-     │  EventBridge (scheduled)                │
-     │  → Lambda (expiration)                  │
-     │  → DynamoDB (update status)             │
+     │ IAM · CloudWatch · CDK · CI/CD · Tests │
      └─────────────────────────────────────────┘
 ```
 
-## AWS Services
+## AWS Responsibilities
 
-| Service | Purpose | Monthly Cost (est.) |
-|---------|---------|-------------------|
-| Cognito | Authentication | Free tier: 50K MAUs |
-| API Gateway | API exposure | Free tier: 1M calls |
-| Lambda | Business logic | Free tier: 1M requests |
-| DynamoDB | Data storage | Free tier: 25GB + 25 WCU/RCU |
-| S3 | Visitor web page | Free tier: 5GB |
-| CloudFront | CDN | Free tier: 1TB transfer |
-| SQS | Notification queue | Free tier: 1M messages |
-| SNS | Push notifications | Free tier: 1M publishes |
-| EventBridge | Code expiration | Free tier: 1M events |
-| CloudWatch | Logs and metrics | Free tier: 5GB logs |
-| CDK | Infrastructure as Code | Free (local tool) |
+| Capability | AWS service | Engineering concern |
+|---|---|---|
+| Identity | Cognito | Authentication and authorization |
+| HTTP API | API Gateway | Public/private boundaries, throttling |
+| Compute | Lambda | Stateless workloads and runtime boundaries |
+| Primary data | DynamoDB | Access-pattern-first modeling |
+| Async work | SQS | Decoupling, retries, DLQ |
+| Notifications | SNS/provider | Eventual consistency and delivery |
+| Scheduling | EventBridge Scheduler | One-time expiration events |
+| Visitor web | S3 + CloudFront | Static delivery and HTTPS |
+| Observability | CloudWatch | Logs, metrics, alarms, dashboards |
+| IaC | AWS CDK | Reproducible infrastructure |
+| Delivery | GitHub Actions | Automated validation and deployment |
+| Security | IAM | Least-privilege runtime roles |
 
-**Total estimated cost**: $0-5/month (within free tier for first 12 months)
+## Engineering Principles
 
-### Service Justifications
+### Access patterns before tables
 
-#### 1. Amazon Cognito
-**Purpose**: Authentication and authorization for residents, guards, and admins
+The conceptual domain model contains:
 
-**Why Cognito**:
-- Managed service: no auth server maintenance
-- Supports multiple user pools (residents vs guards)
-- Native API Gateway integration (authorizer)
-- Supports MFA, social login, and custom attributes
-- Security compliance (SOC, ISO, GDPR)
+- Condominium
+- Resident
+- Guard
+- Visit
+- Validation
 
-**Alternatives considered**:
-- **Auth0**: More features, but more expensive ($23/month for 7K MAUs)
-- **Firebase Auth**: Simpler, but Google vendor lock-in
-- **Self-hosted (Keycloak)**: More control, but significant ops overhead
+Those objects do not imply one DynamoDB table per entity.
 
-**Trade-off**: Cognito has limited UI customization, but sufficient for MVP.
+The physical model must be derived from the queries and mutations required by the application. See [ADR-002](docs/adr/002-dynamodb-access-patterns.md).
 
-#### 2. API Gateway
-**Purpose**: REST API exposure, CORS handling, rate limiting, and authorization
+### Least privilege
 
-**Why API Gateway**:
-- Native Lambda integration (zero-config)
-- Automatic rate limiting (abuse protection)
-- API keys support for public endpoints
-- Auto-generates SDKs (iOS, Android, JS)
-- Pay-per-use: only pay for actual calls
+Each workload receives only the permissions it needs.
 
-**Alternatives considered**:
-- **Application Load Balancer + Lambda**: More control, but more expensive ($16-20/month + Lambda costs)
-- **Express.js on EC2**: More flexibility, but ops overhead (servers, scaling, security patches)
+Runtime roles must not use broad administrative policies. Infrastructure deployment permissions are separated from application runtime permissions.
 
-**Trade-off**: API Gateway has 10MB payload limit, but sufficient for this use case.
+See [ADR-004](docs/adr/004-least-privilege-iam.md).
 
-#### 3. AWS Lambda
-**Purpose**: Business logic (API resolvers, image processing, code expiration)
+### Synchronous vs asynchronous work
 
-**Why Lambda**:
-- Serverless: no server management
-- Auto-scaling: scales from 0 to thousands of requests automatically
-- Pay-per-use: only pay for execution time (125ms increments)
-- Native integration with all AWS services
-- Native TypeScript/Node.js support
+The validation API should not wait for notification delivery.
 
-**Alternatives considered**:
-- **ECS/Fargate**: More control, but more expensive ($5-10/month per task) and ops overhead
-- **EC2**: More flexibility, but significant ops overhead (scaling, security, patches)
+```
+Validation API
+      │
+      ▼
+     SQS
+      │
+      ▼
+Notification Worker
+      │
+      ▼
+     SNS
+```
 
-**Trade-off**: Cold starts can be problematic for latency-sensitive apps, but acceptable for this use case.
+Retries and a dead-letter queue are part of the design.
 
-**Optimization**: Use esbuild to minimize bundle size and reduce cold starts.
+See [ADR-005](docs/adr/005-asynchronous-notifications.md).
 
-#### 4. Amazon DynamoDB
-**Purpose**: Structured data storage (residents, visits, guards, validations)
+### Idempotency
 
-**Why DynamoDB**:
-- Serverless: no cluster management
-- Auto-scaling: scales automatically based on traffic
-- Single-digit millisecond latency at any scale
-- Supports transactions (for atomic operations)
-- Pay-per-use: only pay for actual reads/writes
-- Native Lambda integration
+Retryable operations must be safe to execute more than once.
 
-**Alternatives considered**:
-- **RDS/Aurora (PostgreSQL)**: More familiar, but not serverless (Aurora Serverless exists but more expensive)
-- **MongoDB Atlas**: More schema flexibility, but more expensive and not native AWS
+The implementation must explicitly handle:
 
-**Trade-off**: DynamoDB doesn't support complex joins, but perfect for key-based access patterns.
+- visit validation
+- notification processing
+- expiration
 
-**Design pattern**: Use single-table design with GSI to optimize queries.
+### Observability
 
-#### 5. Amazon S3
-**Purpose**: Static website hosting for visitor web page (HTML/CSS/JS)
+CloudWatch is not an afterthought.
 
-**Why S3**:
-- Native static website hosting
-- Extremely cheap ($0.023/GB/month)
-- Native CloudFront integration
-- 99.999999999% durability
-- Supports versioning (for rollback)
+The project will expose:
 
-**Alternatives considered**:
-- **EC2 + Nginx**: More control, but ops overhead
-- **Netlify/Vercel**: More features (preview deployments), but vendor lock-in
+- structured logs
+- correlation/request IDs
+- API latency
+- API 5xx rate
+- Lambda errors and duration
+- throttling
+- validation latency
+- visits created/validated/rejected/expired
+- notification failures
 
-**Trade-off**: S3 doesn't support server-side rendering, but sufficient for this use case (CSR with API fetch).
+See [ADR-006](docs/adr/006-observability.md).
 
-#### 6. Amazon CloudFront
-**Purpose**: CDN for visitor web page (global low latency)
+### Infrastructure as Code
 
-**Why CloudFront**:
-- Native S3 integration
-- Edge location caching worldwide
-- Automatic HTTPS support
-- Pay-per-use: only pay for transfer
-- Supports custom domains and SSL certificates
+AWS infrastructure is provisioned through CDK.
 
-**Alternatives considered**:
-- **Cloudflare**: More features (DDoS protection), but not native AWS
-- **Fastly**: Faster, but more expensive
+Manual console configuration may be used while learning or investigating, but the repository must remain capable of reproducing the environment.
 
-**Trade-off**: CloudFront has slow propagation (5-10min for invalidations), but acceptable for this use case.
+### Failure is part of the design
 
-#### 7. Amazon SQS
-**Purpose**: Message queue for asynchronous notification processing
+The project will deliberately exercise scenarios such as:
 
-**Why SQS**:
-- Component decoupling (Lambda doesn't block waiting for notifications)
-- Automatic retry on failure
-- Dead-letter queue for failed messages
-- Pay-per-use: only pay for messages
-- Native Lambda integration (event source mapping)
+- SQS redelivery
+- notification worker failure
+- DLQ routing
+- duplicate validation
+- expiration races
+- Lambda errors/throttling
+- public endpoint abuse
 
-**Alternatives considered**:
-- **RabbitMQ**: More features, but ops overhead (self-hosted) or more expensive (Amazon MQ)
-- **Kafka**: More throughput, but overkill for this use case
+## Phase 1 — Cloud + Backend
 
-**Trade-off**: SQS has 256KB message limit, but sufficient for notifications.
+Phase 1 is complete without React Native.
 
-#### 8. Amazon SNS
-**Purpose**: Push notifications to residents (visit validation alerts)
+### Milestone 1 — Foundation
 
-**Why SNS**:
-- Native mobile push notification support (APNS, FCM)
-- Native Lambda and SQS integration
-- Pay-per-use: only pay for sent notifications
-- Supports fan-out (send to multiple subscribers)
+- CDK project
+- AWS account/bootstrap strategy
+- TypeScript runtime
+- Cognito
+- API Gateway
+- DynamoDB access-pattern design
+- IAM roles
+- automated tests
 
-**Alternatives considered**:
-- **Firebase Cloud Messaging**: Simpler, but Google vendor lock-in
-- **OneSignal**: More features, but more expensive ($9/month for 1K subscribers)
+### Milestone 2 — Visit lifecycle
 
-**Trade-off**: SNS requires APNS/FCM credentials configuration, but transparent once configured.
-
-#### 9. Amazon EventBridge
-**Purpose**: Event scheduling for automatic code expiration
-
-**Why EventBridge**:
-- Serverless event bus
-- Supports scheduled events (cron expressions)
-- Native Lambda integration (trigger)
-- Pay-per-use: only pay for events
-- Replaces CloudWatch Events (more features)
-
-**Alternatives considered**:
-- **CloudWatch Events**: Legacy, fewer features
-- **Cron job on EC2**: More control, but ops overhead
-- **Step Functions**: More powerful, but overkill for simple scheduling
-
-**Trade-off**: EventBridge has 5 rules per event source limit, but sufficient for this use case.
-
-#### 10. Amazon CloudWatch
-**Purpose**: Logs, metrics, and alarms
-
-**Why CloudWatch**:
-- Centralized logs from all Lambda functions
-- Automatic metrics (invocations, errors, duration)
-- Alarms for errors or high latency
-- Native integration with all AWS services
-- Pay-per-use: only pay for stored logs
-
-**Alternatives considered**:
-- **Datadog**: More features, but more expensive ($15/host/month)
-- **ELK Stack**: More control, but significant ops overhead
-
-**Trade-off**: CloudWatch Logs can be expensive if retention policy not configured, but acceptable for this use case.
-
-#### 11. AWS CDK (Cloud Development Kit)
-**Purpose**: Infrastructure as Code (IaC) in TypeScript
-
-**Why CDK**:
-- TypeScript: reuse existing skills (no need to learn HCL or YAML)
-- Reusable constructs (L1, L2, L3)
-- Type safety: catches errors at compile time
-- Native integration with all AWS services
-- Versionable (Git)
-
-**Alternatives considered**:
-- **Terraform**: More mature, but requires learning HCL
-- **SAM**: Simpler, but YAML-based and less flexible
-- **CloudFormation**: More control, but YAML/JSON is verbose
-
-**Trade-off**: CDK is newer than Terraform, but best option for greenfield projects.
-
-## Tech Stack
-
-- **Backend**: TypeScript, NestJS
-- **Infrastructure**: AWS CDK (TypeScript)
-- **Database**: DynamoDB
-- **Mobile**: React Native (Expo) - Phase 2
-- **Web**: HTML/CSS/JS with qrcode.js
-
-## Project Phases
-
-### Phase 1: Cloud Native Backend (8 weeks)
-
-**Weeks 1-2: Setup + Auth + Data Model**
-- CDK, LocalStack, NestJS setup
-- Cognito authentication (residents, guards)
-- DynamoDB data model
-
-**Weeks 3-4: Visit CRUD + Public URL**
 - Register visit
-- Generate unique visitId
-- Public endpoint: `GET /public/visits/:code`
-- Cancel visit
+- Generate secure access code
+- Retrieve own visits
+- Cancel pending visit
+- Public visit lookup
+- Authorization boundaries
 
-**Weeks 5-6: Visitor Web Page**
-- Static page in S3
-- CloudFront CDN
-- Fetch to public API
-- QR generation with `qrcode.js`
-- Responsive design
+### Milestone 3 — Visitor web
 
-**Week 7: Guard Validation + Alternative Search**
-- Scan QR with guard app
-- Validate information
-- Approve/reject
-- Alternative search (without QR)
-- Exact match logic
-- Sensitive data protection
+- Static visitor page
+- S3
+- CloudFront
+- HTTPS/custom domain when appropriate
+- QR generation
+- Public API protection
 
-**Week 8: Notifications + Expiration + Deploy**
-- Push notifications to residents
-- Automatic expiration (EventBridge)
-- Deploy to AWS real
-- CloudWatch
-- Production testing
+### Milestone 4 — Guard workflows
 
-### Phase 2: Mobile Client
+- QR validation
+- Alternative search
+- condominium scoping
+- exact-match privacy rules
+- atomic/idempotent validation
 
-- React Native (Expo)
-- Resident app (register visits, view alerts)
-- Guard app (scan QR, validate, search)
+### Milestone 5 — Event-driven behavior
+
+- SQS notification queue
+- retry policy
+- dead-letter queue
+- notification worker
+- EventBridge Scheduler expiration
+- idempotent expiration
+
+### Milestone 6 — Operability
+
+- structured logging
+- CloudWatch metrics
+- dashboards
+- alarms
+- failure exercises
+- operational runbooks
+
+### Milestone 7 — Delivery
+
+- GitHub Actions
+- lint/test/build
+- CDK synth
+- staging deployment
+- controlled production deployment
+- deployment documentation
+
+## Phase 2 — Mobile Client
+
+After Phase 1 is operational:
+
+- React Native / Expo resident app
+- React Native / Expo guard app
 - Cognito authentication
-- Push notifications
+- QR scanning
+- resident visit management
+- guard validation
+- push notification UX
 
-## Current Status
+Mobile is intentionally a second phase so that the project demonstrates cloud/backend depth before client breadth.
 
-🚧 **In design phase** - Architecture and specifications in progress
+## Definition of Done
+
+A cloud capability is complete only when it has:
+
+- application implementation
+- CDK infrastructure
+- automated tests
+- least-privilege IAM
+- observability
+- documented failure behavior
+- relevant ADR
+- reproducible deployment
 
 ## Documentation
 
+- [Engineering Focus](docs/ENGINEERING_FOCUS.md)
 - [Technical Specifications](docs/SPECIFICATIONS.md)
-- [Architecture Decision Records](docs/adr/) - Coming soon
+- [ADR-001 Serverless Architecture](docs/adr/001-serverless-architecture.md)
+- [ADR-002 DynamoDB Access Patterns](docs/adr/002-dynamodb-access-patterns.md)
+- [ADR-003 Visit Expiration](docs/adr/003-visit-expiration.md)
+- [ADR-004 Least-Privilege IAM](docs/adr/004-least-privilege-iam.md)
+- [ADR-005 Asynchronous Notifications](docs/adr/005-asynchronous-notifications.md)
+- [ADR-006 Observability](docs/adr/006-observability.md)
+- [ADR-007 CI/CD and Environments](docs/adr/007-ci-cd-and-environments.md)
+
+Planned documentation:
+
+- Threat model
+- DynamoDB physical key design
+- Operational runbooks
+- Cost analysis
+- Incident/failure exercise
+- CI/CD implementation guide
+
+## Current Status
+
+🚧 **Architecture refactoring phase**
+
+The product specification is established. The current work is turning it into an explicit cloud-engineering learning path before implementation begins.
 
 ## License
 
