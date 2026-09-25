@@ -1,296 +1,296 @@
 # Cloud Engineering Tracking Guide
 
-> Guía de seguimiento para construir **Proyecto Transversal** como laboratorio práctico de Cloud Engineering sobre AWS.
+> Tracking guide for building **Proyecto Transversal** as an AWS Cloud Engineering laboratory.
 
-## Cómo usar este documento
+## How to use this document
 
-Este documento convierte el roadmap del proyecto en un sistema de seguimiento. La intención no es medir cuántas líneas de código existen, sino cuánto dominio técnico has construido.
+This document turns the project roadmap into a practical tracking system. The goal is not to measure how much code exists, but how much technical capability has been developed.
 
-Una capacidad se considera realmente terminada cuando puedes responder cuatro preguntas:
+A capability is truly complete when you can answer four questions:
 
-1. **Build — ¿puedo construirlo?**
-2. **Understand — ¿puedo explicar por qué funciona así y qué trade-offs tiene?**
-3. **Operate — ¿puedo detectar, diagnosticar y recuperar cuando falla?**
-4. **Reproduce — ¿puedo volver a crear el comportamiento mediante infraestructura y automatización?**
+1. **Build — Can I build it?**
+2. **Understand — Can I explain why it works this way and what trade-offs it has?**
+3. **Operate — Can I detect, diagnose, and recover when it fails?**
+4. **Reproduce — Can I recreate it through infrastructure and automation?**
 
-Una casilla marcada sólo por "funciona en mi máquina" no representa dominio suficiente.
+Checking a box only because "it works on my machine" is not sufficient.
 
-### Estados recomendados
+### Recommended states
 
-- [ ] Pendiente
-- [~] En progreso
-- [x] Implementado
-- [x] Entendido
+- [ ] Pending
+- [~] In progress
+- [x] Implemented
+- [x] Understood
 - [x] Operable
 - [x] Reproducible
 
-Cuando sea útil, registra evidencia debajo del punto: commit, test, dashboard, captura, métrica, ADR, runbook o experimento de fallo.
+When useful, record evidence below a check: commit, test, dashboard, metric, ADR, runbook, or failure experiment.
 
 ---
 
-# 0. Arquitectura y diseño
+# 0. Architecture and Design
 
-## Objetivo
+## Objective
 
-Antes de construir servicios, debes ser capaz de explicar el sistema como una arquitectura distribuida y justificar cada componente.
+Before building services, you should be able to explain the system as a distributed architecture and justify every major component.
 
-El objetivo no es memorizar AWS. Es aprender a convertir requisitos de negocio en decisiones técnicas: sincronía vs asincronía, estado vs eventos, autorización, persistencia, disponibilidad, observabilidad y coste.
+The goal is not to memorize AWS services. It is to learn how to turn business requirements into technical decisions: synchronous vs asynchronous processing, state vs events, authorization, persistence, availability, observability, and cost.
 
 ### Checks
 
-- [ ] Definir explícitamente el objetivo de ingeniería del proyecto.
-- [ ] Dibujar la arquitectura general.
-- [ ] Documentar el flujo principal Resident → API → Visit → Visitor → Guard.
-- [ ] Documentar el flujo asíncrono de notificaciones.
-- [ ] Documentar el flujo de expiración.
-- [ ] Documentar los límites de confianza.
-- [ ] Documentar qué servicio AWS resuelve cada responsabilidad.
-- [ ] Documentar qué componentes son síncronos y cuáles asíncronos.
-- [ ] Documentar los puntos donde puede existir consistencia eventual.
-- [ ] Definir ambientes local, staging y producción.
-- [ ] Mantener ADRs para decisiones arquitectónicas relevantes.
-- [ ] Definir una Definition of Done para capacidades cloud.
+- [ ] Explicitly define the project's engineering objective.
+- [ ] Draw the overall architecture.
+- [ ] Document the main Resident → API → Visit → Visitor → Guard flow.
+- [ ] Document the asynchronous notification flow.
+- [ ] Document the expiration flow.
+- [ ] Document trust boundaries.
+- [ ] Document which AWS service owns each responsibility.
+- [ ] Document synchronous and asynchronous components.
+- [ ] Document where eventual consistency can occur.
+- [ ] Define local, staging, and production environments.
+- [ ] Maintain ADRs for relevant architectural decisions.
+- [ ] Define a Definition of Done for cloud capabilities.
 
-### Debes entender
+### You should understand
 
-- Por qué una Lambda no es simplemente "un servidor pequeño".
-- Cuándo API Gateway debe invocar directamente una Lambda y cuándo conviene desacoplar mediante SQS.
-- Por qué el modelo de datos de DynamoDB depende de los access patterns.
-- Por qué IAM forma parte de la arquitectura y no es configuración posterior.
-- Qué significa que un sistema sea distribuido: latencia, fallos parciales, retries, duplicados y consistencia.
+- Why a Lambda is not simply "a small server".
+- When API Gateway should invoke Lambda directly and when SQS should decouple work.
+- Why DynamoDB's physical model depends on access patterns.
+- Why IAM is part of architecture rather than post-deployment configuration.
+- What distributed systems imply: latency, partial failures, retries, duplicates, and consistency.
 
-### Evidencia
+### Evidence
 
-Debes poder dibujar la arquitectura desde cero y explicar el camino de una petición, incluyendo qué ocurre cuando uno de los componentes falla.
+You can draw the architecture from scratch and explain the path of a request, including what happens when one component fails.
 
 ---
 
 # 1. AWS Account Foundation
 
-## Objetivo
+## Objective
 
-Construir una base segura y reproducible para experimentar con AWS sin convertir la cuenta de aprendizaje en un riesgo operativo o financiero.
+Build a secure and reproducible AWS foundation for experimentation without turning the learning account into an operational or financial risk.
 
 ### Checks
 
-- [ ] Crear/configurar la cuenta AWS de sandbox.
-- [ ] Configurar MFA y proteger el usuario root.
-- [ ] Definir región principal.
-- [ ] Crear estrategia de identidades y roles.
-- [ ] Configurar AWS CLI.
-- [ ] Configurar perfiles/credenciales sin almacenarlas en el repositorio.
-- [ ] Ejecutar y entender `aws sts get-caller-identity`.
-- [ ] Configurar alertas de billing.
-- [ ] Revisar límites relevantes de AWS.
-- [ ] Documentar supuestos de coste.
-- [ ] Documentar cómo se destruyen recursos experimentales.
+- [ ] Configure the AWS sandbox account.
+- [ ] Configure MFA and protect the root user.
+- [ ] Define the primary region.
+- [ ] Define an identity and role strategy.
+- [ ] Configure the AWS CLI.
+- [ ] Configure profiles/credentials without storing secrets in the repository.
+- [ ] Run and understand `aws sts get-caller-identity`.
+- [ ] Configure billing alerts.
+- [ ] Review relevant AWS service limits.
+- [ ] Document cost assumptions.
+- [ ] Document how experimental resources are destroyed.
 
-### Debes entender
+### You should understand
 
-Diferencia entre:
+The difference between:
 
-- cuenta AWS;
-- usuario IAM;
-- role IAM;
-- credenciales permanentes;
-- credenciales temporales;
-- identidad usada por tu CLI;
-- identidad asumida por una Lambda;
-- identidad usada por CI/CD.
+- AWS account;
+- IAM user;
+- IAM role;
+- long-lived credentials;
+- temporary credentials;
+- the identity used by your CLI;
+- the identity assumed by a Lambda;
+- the identity used by CI/CD.
 
-La pregunta importante no es "¿cómo entro a AWS?", sino:
+The important question is not "How do I log into AWS?" but:
 
-> ¿Qué identidad está haciendo esta operación y qué permisos tiene?
+> Which identity is performing this operation, and what permissions does it have?
 
-### Evidencia
+### Evidence
 
-Puedes explicar el resultado de `sts get-caller-identity`, identificar qué credencial/role está utilizando una operación y demostrar que el repositorio no contiene secretos AWS.
+You can explain the result of `sts get-caller-identity`, identify which credential/role performs an operation, and demonstrate that the repository contains no AWS secrets.
 
 ---
 
 # 2. CDK / Infrastructure as Code
 
-## Objetivo
+## Objective
 
-Que la infraestructura sea código versionado, revisable y reproducible.
+Make infrastructure versioned, reviewable, reproducible code.
 
 ### Checks
 
-- [ ] Crear estructura CDK en TypeScript.
-- [ ] Definir stack/contexto.
-- [ ] Implementar `cdk synth`.
-- [ ] Implementar `cdk diff`.
-- [ ] Implementar `cdk deploy`.
-- [ ] Implementar `cdk destroy` para recursos descartables.
-- [ ] Definir outputs útiles.
-- [ ] Definir naming/tags.
-- [ ] Definir removal policies conscientemente.
-- [ ] Modelar Cognito.
-- [ ] Modelar API Gateway.
-- [ ] Modelar DynamoDB.
-- [ ] Modelar SQS/DLQ.
-- [ ] Modelar EventBridge Scheduler.
-- [ ] Modelar observabilidad.
-- [ ] Evitar configuración manual como requisito del despliegue.
-- [ ] Revisar el CloudFormation generado.
+- [ ] Create the CDK TypeScript structure.
+- [ ] Define stack/context.
+- [ ] Implement `cdk synth`.
+- [ ] Implement `cdk diff`.
+- [ ] Implement `cdk deploy`.
+- [ ] Implement `cdk destroy` for disposable resources.
+- [ ] Define useful outputs.
+- [ ] Define naming and tags.
+- [ ] Define removal policies consciously.
+- [ ] Model Cognito.
+- [ ] Model API Gateway.
+- [ ] Model DynamoDB.
+- [ ] Model SQS/DLQ.
+- [ ] Model EventBridge Scheduler.
+- [ ] Model observability.
+- [ ] Avoid manual configuration as a deployment requirement.
+- [ ] Review generated CloudFormation.
 
-### Debes entender
+### You should understand
 
-CDK no reemplaza CloudFormation: genera una plantilla declarativa que CloudFormation utiliza para gestionar el estado de la infraestructura.
+CDK does not replace CloudFormation: it generates a declarative template that CloudFormation uses to manage infrastructure state.
 
-Debes poder distinguir:
+You should be able to distinguish:
 
-- código de aplicación;
-- código de infraestructura;
-- configuración;
-- estado administrado por AWS;
-- secretos;
-- recursos efímeros vs persistentes.
+- application code;
+- infrastructure code;
+- configuration;
+- AWS-managed state;
+- secrets;
+- ephemeral vs persistent resources.
 
-También debes entender qué implica cambiar un recurso: actualización in-place, reemplazo, pérdida potencial de datos y dependencia entre recursos.
+You should also understand what changing a resource can mean: in-place update, replacement, potential data loss, and resource dependencies.
 
-### Evidencia
+### Evidence
 
-Una persona debería poder clonar el repositorio, configurar las credenciales y desplegar el stack sin seguir una lista secreta de pasos manuales.
+Another person can clone the repository, configure credentials, and deploy the stack without relying on undocumented manual steps.
 
 ---
 
-# 3. IAM y Security
+# 3. IAM and Security
 
-## Objetivo
+## Objective
 
-Aprender least privilege mediante roles pequeños y responsabilidades aisladas.
+Learn least privilege through small roles and isolated responsibilities.
 
 ### Checks
 
-- [ ] Configurar Cognito User Pool.
-- [ ] Configurar App Client.
-- [ ] Definir roles/perfiles de usuario.
-- [ ] Crear role para API/business logic.
-- [ ] Crear role para worker de notificaciones.
-- [ ] Crear role para expiración.
-- [ ] Separar permisos de deployment de permisos runtime.
-- [ ] Evitar AdministratorAccess en workloads.
-- [ ] Evitar `*` cuando un recurso concreto sea suficiente.
-- [ ] Revisar permisos de cada Lambda.
-- [ ] Probar aislamiento Resident → sus propias visitas.
-- [ ] Probar aislamiento Guard → su condominio.
-- [ ] Probar que un worker no puede modificar recursos que no necesita.
-- [ ] Probar comportamiento ante JWT inválido/expirado.
-- [ ] Documentar amenazas principales.
+- [ ] Configure Cognito User Pool.
+- [ ] Configure App Client.
+- [ ] Define user roles/profiles.
+- [ ] Create a role for API/business logic.
+- [ ] Create a role for the notification worker.
+- [ ] Create a role for expiration.
+- [ ] Separate deployment permissions from runtime permissions.
+- [ ] Avoid AdministratorAccess for workloads.
+- [ ] Avoid `*` when a specific resource is sufficient.
+- [ ] Review every Lambda's permissions.
+- [ ] Test Resident isolation to their own visits.
+- [ ] Test Guard isolation to their condominium.
+- [ ] Test that a worker cannot modify resources it does not need.
+- [ ] Test invalid/expired JWT behavior.
+- [ ] Document major threats.
 
-### Debes entender
+### You should understand
 
-IAM debe responder:
+IAM should answer:
 
-> ¿Quién puede hacer qué, sobre qué recurso y bajo qué condiciones?
+> Who can do what, on which resource, and under which conditions?
 
-No basta con que el sistema funcione. Debes demostrar que una credencial comprometida tiene un blast radius limitado.
+A working system is not enough. You must demonstrate that a compromised credential has a limited blast radius.
 
-También debes diferenciar:
+Also understand the difference between:
 
-- autenticación: quién eres;
-- autorización: qué puedes hacer;
-- identidad de usuario;
-- identidad de workload;
-- permisos de infraestructura.
+- authentication: who you are;
+- authorization: what you can do;
+- user identity;
+- workload identity;
+- infrastructure permissions.
 
-### Evidencia
+### Evidence
 
-Para cada workload puedes explicar qué acciones AWS necesita y por qué. También puedes quitar un permiso deliberadamente y demostrar qué falla y cómo se detecta.
+For every workload, you can explain which AWS actions it needs and why. You can also deliberately remove a permission and demonstrate what fails and how the failure is detected.
 
 ---
 
-# 4. DynamoDB y Access Patterns
+# 4. DynamoDB and Access Patterns
 
-## Objetivo
+## Objective
 
-Aprender a diseñar DynamoDB desde las consultas reales, no desde entidades relacionales.
+Learn to design DynamoDB from real queries rather than relational entities.
 
-### Access patterns mínimos
+### Minimum access patterns
 
-- [ ] Obtener visita mediante access code.
-- [ ] Obtener visitas de un residente.
-- [ ] Obtener visitas esperadas.
-- [ ] Buscar visitante por nombre/unidad dentro de una ventana temporal.
-- [ ] Consultar residentes de un condominio.
-- [ ] Consultar guardias de un condominio.
-- [ ] Validar visita.
-- [ ] Expirar visita.
-- [ ] Consultar historial relevante.
+- [ ] Get a visit by access code.
+- [ ] Get visits for a resident.
+- [ ] Get expected visits.
+- [ ] Search visitors by name/unit within a time window.
+- [ ] Query residents in a condominium.
+- [ ] Query guards in a condominium.
+- [ ] Validate a visit.
+- [ ] Expire a visit.
+- [ ] Query relevant history.
 
 ### Checks
 
-- [ ] Definir PK/SK.
-- [ ] Definir GSIs.
-- [ ] Documentar cardinalidad.
-- [ ] Documentar consistencia requerida.
-- [ ] Documentar paginación.
-- [ ] Documentar coste de cada patrón.
-- [ ] Crear tabla mediante CDK.
-- [ ] Crear índices mediante CDK.
-- [ ] Implementar repository/data-access layer.
-- [ ] Implementar queries reales.
-- [ ] Evitar scans para operaciones normales.
-- [ ] Implementar conditional writes.
-- [ ] Analizar necesidad de TransactWriteItems.
-- [ ] Diseñar idempotencia.
-- [ ] Probar concurrencia de dos validaciones.
+- [ ] Define PK/SK.
+- [ ] Define GSIs.
+- [ ] Document cardinality.
+- [ ] Document required consistency.
+- [ ] Document pagination.
+- [ ] Document the cost of each access pattern.
+- [ ] Create the table through CDK.
+- [ ] Create indexes through CDK.
+- [ ] Implement the repository/data-access layer.
+- [ ] Implement real queries.
+- [ ] Avoid scans for normal operations.
+- [ ] Implement conditional writes.
+- [ ] Evaluate the need for TransactWriteItems.
+- [ ] Design idempotency.
+- [ ] Test concurrent validation.
 
-### Debes entender
+### You should understand
 
-En DynamoDB la pregunta inicial no es:
+The first DynamoDB question is not:
 
-> "¿Qué tablas tengo?"
+> "What tables do I have?"
 
-sino:
+It is:
 
-> "¿Qué consultas necesito ejecutar y cómo las resolveré eficientemente?"
+> "What queries must I execute, and how will I solve them efficiently?"
 
-Debes entender:
+Understand:
 
 - partition key;
 - sort key;
-- distribución de datos;
+- data distribution;
 - hot partitions;
 - GSI;
 - Query vs Scan;
-- consistencia;
+- consistency;
 - conditional expressions;
-- idempotencia;
-- coste de lectura/escritura;
-- paginación.
+- idempotency;
+- read/write cost;
+- pagination.
 
-### Evidencia
+### Evidence
 
-Puedes tomar una consulta nueva del dominio y diseñar su acceso DynamoDB antes de escribir el código. Puedes explicar por qué un Scan sería una mala solución para una operación frecuente.
+You can take a new domain query and design its DynamoDB access pattern before writing code. You can explain why a Scan would be a poor solution for a frequent operation.
 
 ---
 
 # 5. Cognito + API Gateway
 
-## Objetivo
+## Objective
 
-Construir una frontera HTTP autenticada y controlada.
+Build an authenticated and controlled HTTP boundary.
 
 ### Checks
 
-- [ ] Registro de usuario.
+- [ ] User registration.
 - [ ] Login.
-- [ ] Emisión de JWT.
-- [ ] Refresh/token lifecycle.
-- [ ] Obtener identidad del usuario desde el JWT.
-- [ ] Definir autorización por rol.
-- [ ] Configurar API Gateway.
-- [ ] Configurar rutas.
-- [ ] Configurar CORS donde corresponda.
-- [ ] Configurar throttling.
-- [ ] Validar requests.
-- [ ] Definir errores HTTP consistentes.
-- [ ] Proteger endpoints privados.
-- [ ] Mantener endpoint público separado conceptualmente.
+- [ ] JWT issuance.
+- [ ] Token refresh/lifecycle.
+- [ ] Derive user identity from the JWT.
+- [ ] Define role-based authorization.
+- [ ] Configure API Gateway.
+- [ ] Configure routes.
+- [ ] Configure CORS where appropriate.
+- [ ] Configure throttling.
+- [ ] Validate requests.
+- [ ] Define consistent HTTP errors.
+- [ ] Protect private endpoints.
+- [ ] Keep the public endpoint conceptually separate.
 
-### Endpoints objetivo
+### Target endpoints
 
 - [ ] `POST /auth/register`
 - [ ] `POST /visits`
@@ -301,13 +301,13 @@ Construir una frontera HTTP autenticada y controlada.
 - [ ] `POST /visits/search`
 - [ ] `GET /public/visits/:code`
 
-### Debes entender
+### You should understand
 
-La API no debe confiar en datos enviados por el cliente para determinar identidad.
+The API must not trust client-supplied data to determine identity.
 
-Por ejemplo, un residente no debería enviar `residentId=123` y esperar que la API lo tome como verdad. La identidad debe derivarse del contexto autenticado y la autorización debe verificarse en backend.
+For example, a resident should not send `residentId=123` and expect the API to accept it as truth. Identity should come from the authenticated context, and authorization must be enforced by the backend.
 
-También debes entender la diferencia entre:
+Also understand the difference between:
 
 - authentication;
 - authorization;
@@ -315,25 +315,25 @@ También debes entender la diferencia entre:
 - throttling;
 - rate limiting;
 - CORS;
-- errores de cliente vs errores del servidor.
+- client errors vs server errors.
 
-### Evidencia
+### Evidence
 
-Puedes inspeccionar una petición y explicar cómo viaja desde API Gateway hasta la Lambda y cómo se determina la identidad/autorización.
+You can inspect a request and explain how it travels from API Gateway to Lambda and how identity and authorization are determined.
 
 ---
 
-# 6. Visit Domain y State Machine
+# 6. Visit Domain and State Machine
 
-## Objetivo
+## Objective
 
-Mantener el dominio pequeño, pero suficientemente rico para practicar reglas de negocio y transiciones de estado.
+Keep the domain small but rich enough to practice business rules and state transitions.
 
-### Estado objetivo
+### Target state
 
 `PENDING → VALIDATED`
 
-Y estados terminales:
+Terminal states:
 
 - `REJECTED`
 - `CANCELLED`
@@ -341,173 +341,173 @@ Y estados terminales:
 
 ### Checks
 
-- [ ] Crear visita.
-- [ ] Generar access code.
-- [ ] Calcular expiración.
-- [ ] Consultar visita.
-- [ ] Cancelar visita.
-- [ ] Validar visita.
-- [ ] Rechazar visita.
-- [ ] Expirar visita.
-- [ ] Implementar ventana de ±90 minutos para búsqueda.
-- [ ] Implementar comparación exacta cuando sea requerida.
-- [ ] Implementar comparación case-insensitive.
-- [ ] Proteger información sensible.
-- [ ] Aislar datos por condominio.
-- [ ] Manejar múltiples coincidencias.
-- [ ] Definir comportamiento de estados terminales.
-- [ ] Definir comportamiento ante validación duplicada.
+- [ ] Create visit.
+- [ ] Generate access code.
+- [ ] Calculate expiration.
+- [ ] Get visit.
+- [ ] Cancel visit.
+- [ ] Validate visit.
+- [ ] Reject visit.
+- [ ] Expire visit.
+- [ ] Implement the ±90-minute search window.
+- [ ] Implement exact matching where required.
+- [ ] Implement case-insensitive comparison.
+- [ ] Protect sensitive information.
+- [ ] Enforce condominium isolation.
+- [ ] Handle multiple matches.
+- [ ] Define terminal-state behavior.
+- [ ] Define duplicate-validation behavior.
 
-### Debes entender
+### You should understand
 
-Una transición de estado no es sólo una actualización de una propiedad.
+A state transition is more than updating a property.
 
-Debes preguntarte:
+Ask:
 
-- ¿quién puede ejecutarla?
-- ¿desde qué estado?
-- ¿qué ocurre si dos procesos la ejecutan simultáneamente?
-- ¿qué evento externo provoca la transición?
-- ¿qué side effects produce?
-- ¿es idempotente?
-- ¿cómo se observa?
+- Who can execute it?
+- From which state?
+- What happens if two processes execute it simultaneously?
+- What external event triggers it?
+- What side effects does it produce?
+- Is it idempotent?
+- How is it observed?
 
-### Evidencia
+### Evidence
 
-Puedes dibujar la state machine y demostrar qué sucede cuando dos requests intentan validar la misma visita al mismo tiempo.
+You can draw the state machine and demonstrate what happens when two requests attempt to validate the same visit simultaneously.
 
 ---
 
-# 7. Arquitectura Asíncrona: SQS + Worker + DLQ
+# 7. Asynchronous Architecture: SQS + Worker + DLQ
 
-## Objetivo
+## Objective
 
-Aprender a desacoplar trabajo no crítico para la respuesta inmediata y manejar fallos parciales.
+Learn to decouple work that does not need to block the immediate response and handle partial failures.
 
-Flujo:
+Flow:
 
 `Validation API → SQS → Worker → Notification Provider`
 
 ### Checks
 
-- [ ] Crear SQS queue.
-- [ ] Configurar visibility timeout.
-- [ ] Configurar retries.
-- [ ] Crear DLQ.
-- [ ] Configurar redrive policy.
-- [ ] Crear worker Lambda.
-- [ ] Implementar procesamiento.
-- [ ] Implementar idempotencia.
-- [ ] Manejar errores transitorios.
-- [ ] Manejar errores permanentes.
-- [ ] Registrar mensajes fallidos.
-- [ ] Crear alarma para DLQ.
-- [ ] Probar éxito.
-- [ ] Probar retry.
-- [ ] Probar fallo repetido → DLQ.
+- [ ] Create SQS queue.
+- [ ] Configure visibility timeout.
+- [ ] Configure retries.
+- [ ] Create DLQ.
+- [ ] Configure redrive policy.
+- [ ] Create worker Lambda.
+- [ ] Implement processing.
+- [ ] Implement idempotency.
+- [ ] Handle transient errors.
+- [ ] Handle permanent errors.
+- [ ] Record failed messages.
+- [ ] Create a DLQ alarm.
+- [ ] Test success.
+- [ ] Test retry.
+- [ ] Test repeated failure → DLQ.
 
-### Debes entender
+### You should understand
 
-El objetivo de SQS no es simplemente "mandar mensajes".
+SQS is not simply "a way to send messages".
 
-Debes comprender:
+Understand:
 
 - eventual consistency;
-- delivery al menos una vez;
-- duplicados;
+- at-least-once delivery;
+- duplicates;
 - visibility timeout;
 - retries;
 - poison messages;
 - DLQ;
 - backpressure;
-- idempotencia.
+- idempotency.
 
-Una pregunta clave:
+A key question:
 
-> ¿Qué pasa si el worker procesa el mensaje, envía la notificación y después falla antes de marcar correctamente el mensaje?
+> What happens if the worker processes the message, sends the notification, and then fails before the message is successfully acknowledged?
 
-La respuesta debe formar parte del diseño.
+The answer must be part of the design.
 
-### Evidencia
+### Evidence
 
-Puedes introducir un fallo artificial en el worker y observar el retry, el mensaje en DLQ y la alarma correspondiente.
+You can introduce an artificial worker failure and observe the retry, the DLQ message, and the corresponding alarm.
 
 ---
 
-# 8. EventBridge Scheduler y expiración
+# 8. EventBridge Scheduler and Expiration
 
-## Objetivo
+## Objective
 
-Aprender a ejecutar una acción futura como parte del ciclo de vida de una entidad.
+Learn to execute a future action as part of an entity's lifecycle.
 
 ### Checks
 
-- [ ] Crear un schedule one-time.
-- [ ] Asociarlo a `expiresAt`.
-- [ ] Invocar Lambda de expiración.
-- [ ] Implementar transición condicional a EXPIRED.
-- [ ] Manejar ejecución duplicada.
-- [ ] Manejar ejecución retrasada.
-- [ ] Definir cleanup del schedule.
-- [ ] Observar ejecuciones y errores.
-- [ ] Documentar por qué se usa Scheduler.
+- [ ] Create a one-time schedule.
+- [ ] Associate it with `expiresAt`.
+- [ ] Invoke the expiration Lambda.
+- [ ] Implement a conditional transition to EXPIRED.
+- [ ] Handle duplicate execution.
+- [ ] Handle delayed execution.
+- [ ] Define schedule cleanup.
+- [ ] Observe executions and errors.
+- [ ] Document why Scheduler is used.
 
-### Debes entender
+### You should understand
 
-Debes distinguir:
+Distinguish between:
 
 - DynamoDB TTL;
 - EventBridge Scheduler;
 - EventBridge Rules.
 
-TTL sirve principalmente para expiración/eliminación eventual de datos.
+TTL is primarily for eventual data expiration/deletion.
 
-Scheduler sirve cuando necesitas que ocurra una acción en un momento determinado.
+Scheduler is appropriate when a specific action needs to happen at a scheduled time.
 
-Una visita que deja de ser válida necesita una transición de negocio, por lo que no debes asumir que TTL sustituye automáticamente esa lógica.
+A visit becoming invalid is a business state transition, so TTL should not automatically be treated as a replacement for that logic.
 
-### Evidencia
+### Evidence
 
-Puedes retrasar o repetir la ejecución de expiración y demostrar que la transición de estado sigue siendo segura.
+You can delay or repeat expiration execution and demonstrate that the state transition remains safe.
 
 ---
 
 # 9. Visitor Web: S3 + CloudFront
 
-## Objetivo
+## Objective
 
-Construir un cliente público mínimo y usarlo como laboratorio de hosting, CDN y seguridad.
+Build a minimal public client and use it as a laboratory for hosting, CDN behavior, and security.
 
 ### Checks
 
-- [ ] Crear aplicación web estática.
-- [ ] Publicar assets en S3.
-- [ ] Configurar CloudFront.
-- [ ] Configurar HTTPS.
-- [ ] Configurar caching.
-- [ ] Configurar errores/routing necesarios.
-- [ ] Consumir endpoint público.
-- [ ] Mostrar QR.
-- [ ] Mostrar información mínima de visita.
-- [ ] Mostrar visita expirada.
-- [ ] Mostrar código inválido.
-- [ ] Validar comportamiento responsive.
+- [ ] Create the static web application.
+- [ ] Publish assets to S3.
+- [ ] Configure CloudFront.
+- [ ] Configure HTTPS.
+- [ ] Configure caching.
+- [ ] Configure required errors/routing.
+- [ ] Consume the public endpoint.
+- [ ] Display the QR code.
+- [ ] Display minimum visit information.
+- [ ] Display expired visits.
+- [ ] Display invalid codes.
+- [ ] Validate responsive behavior.
 
-### Seguridad
+### Security
 
-- [ ] No exponer información sensible innecesaria.
-- [ ] Tratar access code como bearer capability.
-- [ ] Usar suficiente entropía/impredecibilidad.
-- [ ] Proteger endpoint contra abuso.
-- [ ] Evitar secretos en JavaScript público.
+- [ ] Do not expose unnecessary sensitive information.
+- [ ] Treat the access code as a bearer capability.
+- [ ] Use sufficient entropy/unpredictability.
+- [ ] Protect the endpoint against abuse.
+- [ ] Do not place secrets in public JavaScript.
 
-### Debes entender
+### You should understand
 
-La web pública es deliberadamente diferente de la aplicación autenticada.
+The public web experience is deliberately different from the authenticated application.
 
-El visitante no necesita una cuenta, por lo que el access code funciona como una capacidad de acceso. Eso implica que debe ser difícil de adivinar y que la respuesta debe contener sólo lo necesario.
+The visitor does not need an account, so the access code acts as a capability. It must therefore be difficult to guess, and the response should contain only the information required for the visitor flow.
 
-También debes comprender:
+Also understand:
 
 - object storage;
 - CDN;
@@ -515,32 +515,32 @@ También debes comprender:
 - invalidation;
 - HTTPS;
 - origin;
-- exposición pública vs acceso público controlado.
+- public exposure vs controlled public access.
 
-### Evidencia
+### Evidence
 
-Puedes explicar qué información sería peligrosa exponer aunque el access code sea válido y cómo limitarías esa exposición.
+You can explain what information would be dangerous to expose even with a valid access code and how you would limit that exposure.
 
 ---
 
-# 10. Observabilidad y Operación
+# 10. Observability and Operations
 
-## Objetivo
+## Objective
 
-Pasar de "el sistema funciona" a "sé si funciona, por qué falla y cuándo se recuperó".
+Move from "the system works" to "I know whether it works, why it fails, and when it recovered".
 
 ### Logs
 
-- [ ] Logs estructurados JSON.
+- [ ] Structured JSON logs.
 - [ ] Request/correlation ID.
-- [ ] User ID cuando sea apropiado.
-- [ ] Identificadores de operación.
-- [ ] Nivel de log coherente.
-- [ ] No registrar secretos.
-- [ ] Minimizar PII.
-- [ ] Registrar errores con contexto útil.
+- [ ] User ID where appropriate.
+- [ ] Operation identifiers.
+- [ ] Consistent log levels.
+- [ ] No secrets in logs.
+- [ ] Minimize PII.
+- [ ] Record errors with useful context.
 
-### Métricas
+### Metrics
 
 - [ ] Visits created.
 - [ ] Visits validated.
@@ -557,49 +557,49 @@ Pasar de "el sistema funciona" a "sé si funciona, por qué falla y cuándo se r
 
 ### Dashboards
 
-- [ ] Dashboard técnico.
-- [ ] Dashboard de negocio.
-- [ ] Visualizar tendencias.
-- [ ] Identificar anomalías.
+- [ ] Technical dashboard.
+- [ ] Business dashboard.
+- [ ] Visualize trends.
+- [ ] Identify anomalies.
 
-### Alarmas
+### Alarms
 
 - [ ] API 5xx.
-- [ ] Latencia alta.
+- [ ] High latency.
 - [ ] Lambda errors.
 - [ ] Lambda throttling.
-- [ ] Mensajes en DLQ.
+- [ ] DLQ messages.
 
-### Debes entender
+### You should understand
 
-Observabilidad responde tres preguntas:
+Observability answers three questions:
 
-- **Logs:** ¿qué ocurrió?
-- **Metrics:** ¿con qué frecuencia o magnitud ocurre?
-- **Traces/correlation:** ¿cómo se relacionó una operación distribuida?
+- **Logs:** What happened?
+- **Metrics:** How often or how severely is it happening?
+- **Traces/correlation:** How is one distributed operation connected across components?
 
-No basta con producir logs. Deben permitir investigar una operación concreta.
+Producing logs is not enough. They must allow investigation of a specific operation.
 
-### Evidencia
+### Evidence
 
-Introduce un fallo y demuestra:
+Introduce a failure and demonstrate:
 
-1. cómo se detecta;
-2. dónde aparece;
-3. cómo encuentras la causa;
-4. cómo verificas la recuperación.
+1. how it is detected;
+2. where it appears;
+3. how you identify the cause;
+4. how you verify recovery.
 
 ---
 
 # 11. Testing
 
-## Objetivo
+## Objective
 
-Probar comportamiento, seguridad y contratos, no sólo funciones aisladas.
+Test behavior, security, and contracts rather than only isolated functions.
 
 ### Unit tests
 
-- [ ] Reglas de dominio.
+- [ ] Domain rules.
 - [ ] State transitions.
 - [ ] Access code generation.
 - [ ] Validation rules.
@@ -615,25 +615,25 @@ Probar comportamiento, seguridad y contratos, no sólo funciones aisladas.
 
 ### E2E
 
-- [ ] Resident crea visita.
-- [ ] Visitor abre URL.
-- [ ] Guard valida.
-- [ ] Notification flow se ejecuta.
-- [ ] Visit expira.
+- [ ] Resident creates a visit.
+- [ ] Visitor opens the URL.
+- [ ] Guard validates.
+- [ ] Notification flow executes.
+- [ ] Visit expires.
 
 ### Security tests
 
-- [ ] Resident no puede consultar visita ajena.
-- [ ] Guard no puede acceder a otro condominio.
-- [ ] JWT inválido es rechazado.
-- [ ] JWT expirado es rechazado.
-- [ ] Public endpoint no expone datos sensibles.
-- [ ] Access code inválido no revela información.
-- [ ] Concurrent validation no produce dos validaciones válidas.
+- [ ] Resident cannot access another resident's visit.
+- [ ] Guard cannot access another condominium.
+- [ ] Invalid JWT is rejected.
+- [ ] Expired JWT is rejected.
+- [ ] Public endpoint does not expose sensitive data.
+- [ ] Invalid access code reveals no sensitive information.
+- [ ] Concurrent validation does not produce two valid validations.
 
-### Debes entender
+### You should understand
 
-Diferencia entre:
+The difference between:
 
 - unit;
 - integration;
@@ -642,21 +642,21 @@ Diferencia entre:
 - security;
 - failure testing.
 
-También debes entender qué dependencias conviene mockear y cuáles vale la pena probar contra servicios reales o emulados.
+Also understand which dependencies should be mocked and which are worth testing against real or emulated services.
 
-LocalStack puede ayudar durante desarrollo, pero no demuestra por sí solo que el comportamiento sea idéntico a AWS.
+LocalStack can help during development, but it does not by itself prove that behavior is identical to AWS.
 
-### Evidencia
+### Evidence
 
-Una modificación que rompe una regla crítica debe producir un test fallido antes de ser corregida.
+A change that breaks a critical rule must cause an automated test to fail before the issue is fixed.
 
 ---
 
 # 12. CI/CD
 
-## Objetivo
+## Objective
 
-Convertir el repositorio en una cadena reproducible de validación y despliegue.
+Turn the repository into a reproducible validation and deployment pipeline.
 
 ### Pull Request checks
 
@@ -666,222 +666,222 @@ Convertir el repositorio en una cadena reproducible de validación y despliegue.
 - [ ] Integration tests.
 - [ ] Build.
 - [ ] CDK synth.
-- [ ] CDK diff cuando corresponda.
+- [ ] CDK diff where appropriate.
 - [ ] Type checking.
 
 ### Deployment
 
-- [ ] Ambiente de desarrollo/staging.
-- [ ] Ambiente de producción.
-- [ ] Configuración por ambiente.
-- [ ] Secrets externos.
-- [ ] Deployment reproducible.
-- [ ] Rollback documentado.
-- [ ] GitHub Actions configurado.
-- [ ] GitHub → AWS mediante OIDC/short-lived credentials cuando corresponda.
-- [ ] No guardar AWS access keys en el repositorio.
+- [ ] Development/staging environment.
+- [ ] Production environment.
+- [ ] Environment-specific configuration.
+- [ ] External secrets.
+- [ ] Reproducible deployment.
+- [ ] Documented rollback.
+- [ ] GitHub Actions configured.
+- [ ] GitHub → AWS through OIDC/short-lived credentials where appropriate.
+- [ ] No AWS access keys stored in the repository.
 
-### Debes entender
+### You should understand
 
-CI/CD no significa sólo "hacer deploy automáticamente".
+CI/CD does not simply mean "deploy automatically".
 
-Debes poder explicar:
+You should be able to explain:
 
-- qué valida CI;
-- qué cambia CD;
-- qué identidad usa GitHub Actions;
-- qué permisos tiene;
-- cómo se evita comprometer credenciales;
-- cómo detectar un deployment defectuoso;
-- cómo regresar a una versión anterior.
+- what CI validates;
+- what CD changes;
+- which identity GitHub Actions uses;
+- which permissions it has;
+- how credentials are protected;
+- how a bad deployment is detected;
+- how to return to a previous version.
 
-### Evidencia
+### Evidence
 
-Un PR que rompe tests o CDK synth debe quedar bloqueado automáticamente. Un cambio válido debe poder llegar al ambiente correspondiente sin intervención manual secreta.
+A PR that breaks tests or CDK synth is automatically blocked. A valid change can reach the appropriate environment without undocumented manual intervention.
 
 ---
 
 # 13. Reliability / Failure Lab
 
-## Objetivo
+## Objective
 
-Esta sección es donde el proyecto pasa de tutorial a laboratorio de ingeniería.
+This is where the project moves from tutorial to engineering laboratory.
 
-No sólo debes implementar happy paths. Debes provocar fallos deliberadamente.
+Do not implement only happy paths. Deliberately introduce failures.
 
-### Experimentos
+### Experiments
 
-- [ ] Lambda falla.
-- [ ] SQS consumer falla.
-- [ ] Mensaje termina en DLQ.
-- [ ] Mensaje duplicado.
-- [ ] Validación duplicada.
-- [ ] Race condition durante expiración.
+- [ ] Lambda failure.
+- [ ] SQS consumer failure.
+- [ ] Message reaches DLQ.
+- [ ] Duplicate message.
+- [ ] Duplicate validation.
+- [ ] Race condition during expiration.
 - [ ] API throttling.
-- [ ] JWT inválido.
-- [ ] DynamoDB conditional write falla.
-- [ ] Worker falla después de ejecutar parte de su trabajo.
-- [ ] Dependencia externa no responde.
+- [ ] Invalid JWT.
+- [ ] DynamoDB conditional write failure.
+- [ ] Worker failure after partially completing work.
+- [ ] External dependency unavailable.
 
-### Para cada experimento documentar
+### Document each experiment as
 
 **Failure → Detection → Impact → Recovery → Prevention**
 
-### Debes entender
+### You should understand
 
-Un sistema confiable no es aquel donde nada falla.
+A reliable system is not one where nothing fails.
 
-Es aquel donde:
+It is one where:
 
-1. los fallos están contemplados;
-2. el impacto está limitado;
-3. el sistema puede detectarlos;
-4. existe una estrategia de recuperación;
-5. el mismo fallo no se repite indefinidamente.
+1. failures are anticipated;
+2. impact is limited;
+3. the system can detect them;
+4. recovery is possible;
+5. the same failure does not repeat indefinitely.
 
-### Evidencia
+### Evidence
 
-Cada experimento debe tener un pequeño registro con:
+Each experiment should record:
 
-- condición inicial;
-- fallo introducido;
-- síntoma;
-- métrica/log/alarma observada;
-- recuperación;
-- cambio preventivo.
+- initial condition;
+- injected failure;
+- symptom;
+- observed metric/log/alarm;
+- recovery;
+- preventive change.
 
 ---
 
 # 14. Cost Engineering
 
-## Objetivo
+## Objective
 
-Aprender a pensar en coste como una propiedad técnica.
+Learn to treat cost as a technical property.
 
 ### Checks
 
-- [ ] Identificar coste potencial de cada servicio.
-- [ ] Configurar billing alerts.
-- [ ] Documentar supuestos de uso.
-- [ ] Estimar coste mensual.
-- [ ] Separar coste fijo y variable.
-- [ ] Analizar DynamoDB capacity mode.
-- [ ] Analizar Lambda invocations/duration.
-- [ ] Analizar API Gateway.
-- [ ] Analizar SQS.
-- [ ] Analizar CloudFront/S3.
-- [ ] Analizar CloudWatch logs/retention.
-- [ ] Revisar coste al aumentar tráfico.
-- [ ] Documentar supuestos de Free Tier.
-- [ ] No asumir que "Free Tier" significa coste cero en cualquier escenario.
+- [ ] Identify potential cost drivers for each service.
+- [ ] Configure billing alerts.
+- [ ] Document usage assumptions.
+- [ ] Estimate monthly cost.
+- [ ] Separate fixed and variable costs.
+- [ ] Analyze DynamoDB capacity mode.
+- [ ] Analyze Lambda invocations/duration.
+- [ ] Analyze API Gateway.
+- [ ] Analyze SQS.
+- [ ] Analyze CloudFront/S3.
+- [ ] Analyze CloudWatch logs/retention.
+- [ ] Review cost as traffic increases.
+- [ ] Document Free Tier assumptions.
+- [ ] Do not assume "Free Tier" means zero cost in every scenario.
 
-### Debes entender
+### You should understand
 
-La pregunta no es sólo:
+The question is not only:
 
-> "¿Cuánto cuesta hoy?"
+> "How much does it cost today?"
 
-Sino:
+It is:
 
-> "¿Qué variable hace que el coste aumente?"
+> "Which variable causes the cost to increase?"
 
-Por ejemplo:
+Examples:
 
 - requests;
-- duración;
-- almacenamiento;
-- transferencia;
-- lecturas/escrituras;
+- duration;
+- storage;
+- data transfer;
+- reads/writes;
 - logs;
-- mensajes;
-- distribución CDN.
+- messages;
+- CDN distribution.
 
-### Evidencia
+### Evidence
 
-Puedes tomar una hipótesis de tráfico y explicar qué componentes del sistema crecerían de coste y por qué.
+Given a traffic hypothesis, you can explain which system components would increase in cost and why.
 
 ---
 
-# 15. Threat Model y Security Review
+# 15. Threat Model and Security Review
 
-## Objetivo
+## Objective
 
-Modelar las amenazas antes de que aparezcan como incidentes.
+Model threats before they become incidents.
 
 ### Checks
 
-- [ ] Identificar assets.
-- [ ] Identificar actores.
-- [ ] Identificar trust boundaries.
-- [ ] Identificar attack surfaces.
-- [ ] Revisar autenticación.
-- [ ] Revisar autorización.
-- [ ] Revisar public URL.
-- [ ] Revisar access code.
-- [ ] Revisar QR.
-- [ ] Revisar abuso del API.
-- [ ] Revisar PII.
-- [ ] Revisar logs.
-- [ ] Documentar mitigaciones.
+- [ ] Identify assets.
+- [ ] Identify actors.
+- [ ] Identify trust boundaries.
+- [ ] Identify attack surfaces.
+- [ ] Review authentication.
+- [ ] Review authorization.
+- [ ] Review public URLs.
+- [ ] Review access codes.
+- [ ] Review QR codes.
+- [ ] Review API abuse.
+- [ ] Review PII.
+- [ ] Review logs.
+- [ ] Document mitigations.
 
-### Actores mínimos
+### Minimum actors
 
 - Resident.
 - Guard.
 - Visitor.
-- Administrador.
-- Atacante externo.
-- Workload AWS.
-- Pipeline CI/CD.
+- Administrator.
+- External attacker.
+- AWS workload.
+- CI/CD pipeline.
 
-### Debes entender
+### You should understand
 
-Para cada amenaza debes poder responder:
+For each threat, you should be able to answer:
 
-- ¿qué recurso intento proteger?
-- ¿quién podría atacarlo?
-- ¿qué vector usaría?
-- ¿qué control lo bloquea?
-- ¿qué ocurre si ese control falla?
-- ¿cómo detectaría el incidente?
+- What resource am I protecting?
+- Who could attack it?
+- Which vector could they use?
+- Which control blocks it?
+- What happens if that control fails?
+- How would I detect the incident?
 
-### Evidencia
+### Evidence
 
-Puedes revisar la arquitectura y encontrar al menos un escenario donde una implementación ingenua expondría información que no debería exponerse.
+You can review the architecture and identify at least one scenario where a naive implementation would expose information that should remain protected.
 
 ---
 
 # 16. Mobile Phase 2
 
-## Objetivo
+## Objective
 
-Agregar React Native/Expo sólo después de que la plataforma cloud pueda operar independientemente del cliente móvil.
+Add React Native/Expo only after the cloud platform can operate independently of the mobile client.
 
-El móvil es consumidor de la plataforma, no el centro del laboratorio cloud.
+Mobile is a consumer of the platform, not the center of the cloud laboratory.
 
 ### Resident App
 
 - [ ] Expo project.
 - [ ] Cognito login.
 - [ ] Token lifecycle.
-- [ ] Crear visita.
-- [ ] Consultar visitas.
-- [ ] Historial.
-- [ ] Compartir visita.
-- [ ] Mostrar QR cuando corresponda.
+- [ ] Create visit.
+- [ ] Query visits.
+- [ ] History.
+- [ ] Share visit.
+- [ ] Display QR when appropriate.
 - [ ] Push notifications.
 
 ### Guard App
 
 - [ ] Login.
 - [ ] Scanner.
-- [ ] Validación.
-- [ ] Búsqueda manual.
-- [ ] Aprobar/rechazar.
-- [ ] Manejo de errores.
-- [ ] Información mínima antes de coincidencia exacta.
+- [ ] Validation.
+- [ ] Manual search.
+- [ ] Approve/reject.
+- [ ] Error handling.
+- [ ] Minimum information before exact matching.
 
-### Cliente/API
+### Client/API
 
 - [ ] API client.
 - [ ] Token management.
@@ -891,91 +891,91 @@ El móvil es consumidor de la plataforma, no el centro del laboratorio cloud.
 - [ ] Offline considerations.
 - [ ] Push registration.
 
-### Debes entender
+### You should understand
 
-El cliente móvil no debería contener reglas críticas de autorización.
+The mobile client should not contain critical authorization rules.
 
-La API debe seguir siendo la fuente de verdad.
+The API remains the source of truth.
 
-La app puede mejorar UX, cachear o anticipar operaciones, pero no debe convertirse en el lugar donde se decide si una operación está permitida.
+The app can improve UX, cache data, or anticipate operations, but it must not become the place where permission to perform an operation is decided.
 
-### Criterio para iniciar Phase 2
+### Phase 2 entry criteria
 
-No comenzar Mobile Phase 2 hasta que Phase 1 tenga:
+Do not start Mobile Phase 2 until Phase 1 has:
 
-- infraestructura desplegable;
-- API operativa;
-- seguridad;
-- persistencia;
-- eventos;
-- observabilidad;
+- deployable infrastructure;
+- operational API;
+- security;
+- persistence;
+- events;
+- observability;
 - tests;
 - CI/CD;
-- failure lab mínimo.
+- a minimum failure lab.
 
 ---
 
-# 17. Definition of Done por capacidad
+# 17. Definition of Done per Capability
 
-Para evitar marcar cosas prematuramente, cada capacidad cloud debe pasar por esta plantilla.
+To avoid marking work complete prematurely, every cloud capability should pass this template.
 
-## Capacidad
+## Capability
 
-**Nombre:** _ej. Validación de visita_
+**Name:** _e.g. Visit validation_
 
 ### Build
 
-- [ ] Código implementado.
-- [ ] Infraestructura definida en CDK.
-- [ ] Tests automatizados.
-- [ ] Configuración documentada.
+- [ ] Code implemented.
+- [ ] Infrastructure defined in CDK.
+- [ ] Automated tests.
+- [ ] Configuration documented.
 
 ### Understand
 
-- [ ] Puedo explicar el flujo completo.
-- [ ] Puedo explicar por qué elegí esta arquitectura.
-- [ ] Conozco alternativas razonables.
-- [ ] Conozco los trade-offs.
-- [ ] Conozco los límites de la solución.
+- [ ] I can explain the complete flow.
+- [ ] I can explain why this architecture was chosen.
+- [ ] I know reasonable alternatives.
+- [ ] I know the trade-offs.
+- [ ] I know the solution's limitations.
 
 ### Operate
 
-- [ ] Tiene logs útiles.
-- [ ] Tiene métricas relevantes.
-- [ ] Tiene alarmas cuando corresponde.
-- [ ] Sé diagnosticar un fallo.
-- [ ] Sé recuperar el sistema.
-- [ ] Existe comportamiento definido ante retries/duplicados.
+- [ ] Useful logs exist.
+- [ ] Relevant metrics exist.
+- [ ] Alarms exist where appropriate.
+- [ ] I can diagnose a failure.
+- [ ] I can recover the system.
+- [ ] Retry/duplicate behavior is defined.
 
 ### Security
 
 - [ ] IAM least privilege.
-- [ ] Autenticación correcta.
-- [ ] Autorización correcta.
-- [ ] No expone secretos.
-- [ ] No expone PII innecesaria.
-- [ ] Se revisaron attack surfaces.
+- [ ] Correct authentication.
+- [ ] Correct authorization.
+- [ ] No secret exposure.
+- [ ] No unnecessary PII exposure.
+- [ ] Attack surfaces reviewed.
 
 ### Cost
 
-- [ ] Conozco los principales drivers de coste.
-- [ ] Tengo una estimación.
-- [ ] Conozco qué ocurre si aumenta el tráfico.
+- [ ] I know the main cost drivers.
+- [ ] I have an estimate.
+- [ ] I know what happens as traffic increases.
 
 ### Reproduce
 
-- [ ] Infraestructura en CDK.
-- [ ] Deployment automatizable.
-- [ ] No depende de configuración manual secreta.
-- [ ] Puede reconstruirse desde el repositorio.
+- [ ] Infrastructure is defined in CDK.
+- [ ] Deployment is automatable.
+- [ ] No undocumented manual configuration is required.
+- [ ] The capability can be rebuilt from the repository.
 
 ---
 
-# 18. Tracking global
+# 18. Global Tracking
 
-## Fase 1 — Cloud Engineering
+## Phase 1 — Cloud Engineering
 
-| Área | Peso |
+| Area | Weight |
 |---|---:|
 | Architecture & Design | 5% |
 | AWS Foundation | 5% |
@@ -993,13 +993,13 @@ Para evitar marcar cosas prematuramente, cada capacidad cloud debe pasar por est
 | Cost Engineering | 5% |
 | **Total** | **100%** |
 
-> Threat Modeling funciona como una revisión transversal de Security, no como porcentaje adicional.
+> Threat Modeling is treated as a cross-cutting Security review rather than an additional percentage.
 
-## Vista Build / Understand / Operate
+## Build / Understand / Operate / Reproduce view
 
-Usa esta tabla como resumen de avance:
+Use this table as a progress summary:
 
-| Capacidad | Build | Understand | Operate | Reproduce |
+| Capability | Build | Understand | Operate | Reproduce |
 |---|---|---|---|---|
 | CDK foundation | [ ] | [ ] | [ ] | [ ] |
 | IAM roles | [ ] | [ ] | [ ] | [ ] |
@@ -1018,38 +1018,38 @@ Usa esta tabla como resumen de avance:
 
 ---
 
-# 19. Regla práctica de progreso
+# 19. Practical Progress Rule
 
-No midas el avance únicamente por features.
+Do not measure progress only by features.
 
-Una feature como "crear visita" puede representar poco aprendizaje si sólo consiste en:
+A feature such as "create visit" may represent little learning if it is only:
 
 `POST → Lambda → DynamoDB → 200`
 
-El mismo capability representa mucho más aprendizaje si además incluye:
+The same capability represents substantially more engineering learning when it also includes:
 
 `API → Auth → IAM → Validation → DynamoDB access pattern → Conditional write → Logs → Metrics → Tests → Failure handling → CDK → CI/CD → Cost`
 
-Ese es el criterio de este proyecto.
+That is the standard for this project.
 
-## El proyecto está avanzando cuando puedes pasar progresivamente de:
+## The project is progressing when you can move from:
 
-**"Sé hacerlo"**
+**"I know how to build it."**
 
-a
+to
 
-**"Sé por qué está diseñado así"**
+**"I know why it is designed this way."**
 
-a
+to
 
-**"Sé qué ocurre cuando falla"**
+**"I know what happens when it fails."**
 
-a
+to
 
-**"Puedo detectarlo y recuperarlo"**
+**"I can detect and recover from it."**
 
-a
+to
 
-**"Puedo reproducirlo automáticamente."**
+**"I can reproduce it automatically."**
 
-Ese último nivel es el objetivo principal del laboratorio.
+That final level is the primary goal of the laboratory.
