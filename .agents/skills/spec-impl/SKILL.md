@@ -175,7 +175,20 @@ Wait for explicit confirmation ("yes", "go ahead", "go", or equivalent). Do not 
 
 Once confirmed, follow these rules during the entire implementation:
 
-**Never commit automatically.** Not per step, not at the end. You write the code and show the diff; committing is the user's decision and the user's command. Only commit if they explicitly ask you to.
+**Never commit automatically.** Not per step, not at the end. You write the code and show the diff. The user decides what belongs in the commit.
+
+After completing each implementation step and showing the diff, explicitly ask whether the user wants to commit the current changes before moving to the next step.
+
+Use this sequence:
+
+1. Implement the step.
+2. Show the touched files and the relevant diff summary.
+3. Ask the user to review the diff.
+4. After the user confirms the step is correct, ask: `Do you want to commit these changes before I continue to Step N+1?`
+5. If the user says yes, wait for the user's commit action or explicit request for the agent to create the commit. Never create the commit merely because the user approved the step.
+6. If the user says no, continue to the next step without committing.
+
+Approval of a step and approval of a commit are two separate decisions.
 
 **One rule above all:** implement what the spec says. If something in the spec looks suboptimal to you, mention it as an observation but implement what was agreed. Changes to the spec go into the spec, not into the code by surprise.
 
@@ -183,8 +196,11 @@ Once confirmed, follow these rules during the entire implementation:
 
 - Implement one step of the plan.
 - Show a summary of which files you touched and what you did.
-- Say: `Step N completed. Could you review the diff and let me know if I continue with Step N+1?`
-- Wait for confirmation before continuing.
+- Say: `Step N completed. Review the diff and let me know whether the implementation is correct.`
+- Wait for confirmation.
+- After the implementation review is positive, explicitly ask whether the user wants to commit the step before continuing.
+- Treat commit approval separately from implementation approval.
+- Wait for the user's decision before continuing to Step N+1.
 
 **If during the implementation you find an ambiguity** the spec does not resolve:
 
