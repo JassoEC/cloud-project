@@ -1,1091 +1,748 @@
-# Cloud Engineering Implementation Plan
+# Cloud Engineering Implementation Checklist
 
-This document is the execution path for implementing Proyecto Transversal as described in [CLOUD_ENGINEERING_TRACKING.md](./CLOUD_ENGINEERING_TRACKING.md).
+This document is the step-by-step implementation checklist for Proyecto Transversal.
 
-The tracking guide answers **what capabilities must be demonstrated**. This document answers **in what order to implement them, what to verify, and what evidence to leave behind**.
+Use it together with [CLOUD_ENGINEERING_TRACKING.md](./CLOUD_ENGINEERING_TRACKING.md):
 
-The sequence is intentionally designed to build the cloud foundation before the product surface. Do not skip directly to application features because the domain is small; the purpose of the project is to practice production-oriented Cloud Engineering.
+- `CLOUD_ENGINEERING_TRACKING.md` defines **what capability must be demonstrated**.
+- This document defines **the implementation order and the checks we review together**.
+- ADRs explain important architectural decisions.
+- Failure-lab records explain how the system behaves under failure.
+- Runbooks explain how an operator diagnoses and recovers.
+- CI/CD workflows provide reproducible delivery evidence.
 
-## 1. Define the engineering baseline
+## How to use this checklist
 
-### Goal
+A checkbox is not complete because the code exists.
 
-Establish the repository, development conventions, AWS account boundary, and local toolchain before provisioning application resources.
+For each check, review together:
 
-### Implement
+- **Implemented** — the required code/infrastructure exists.
+- **Verified** — the behavior was actually tested.
+- **Understood** — the design and tradeoffs can be explained.
+- **Operable** — failures can be detected and handled.
+- **Reproducible** — the capability can be rebuilt from the repository.
 
-- Confirm the repository structure.
-- Confirm TypeScript and Node.js versions.
-- Define package scripts for:
-  - formatting
-  - linting
-  - type checking
-  - unit tests
-  - integration tests
-  - CDK synth
-- Establish the CDK application entry point.
-- Document required local tools.
-- Define environment names such as `dev`, `staging`, and `prod`.
-- Confirm that no AWS credentials or secrets are committed.
-
-### Verify
-
-Run the repository checks locally and confirm that the CDK application can load without deploying resources.
-
-### Evidence
-
-- Working repository scripts
-- Initial CDK skeleton
-- Documentation
-- Clean Git history
-- No committed credentials
-
-### Tracking alignment
-
-- Architecture and Design
-- AWS Account Foundation
-- CDK / Infrastructure as Code
-- CI/CD
-
----
-
-## 2. Establish the AWS account foundation
-
-### Goal
-
-Create a safe AWS foundation for experimentation and deployment.
-
-### Implement
-
-- Enable MFA on the root account.
-- Create the required administrative/deployment identity.
-- Configure the AWS CLI.
-- Select and document the primary AWS region.
-- Configure billing visibility and cost alerts.
-- Confirm the active identity with:
-
-```bash
-aws sts get-caller-identity
-```
-
-- Document account and environment assumptions without committing sensitive identifiers.
-- Establish a policy for destroying disposable resources created during experiments.
-
-### Verify
-
-The CLI identity is the expected identity and the development environment does not rely on the root account for normal engineering work.
-
-### Evidence
-
-- AWS account setup checklist
-- Successful `sts get-caller-identity`
-- Billing/cost controls
-- Documented region and environment strategy
-
-### Tracking alignment
-
-- AWS Account Foundation
-- Cost Engineering
-- IAM / Security
-
----
-
-## 3. Build the CDK foundation
-
-### Goal
-
-Make infrastructure reproducible before implementing application behavior.
-
-### Implement
-
-Create the initial CDK application and establish:
-
-- CDK bootstrap requirements
-- stack boundaries
-- environment configuration
-- resource naming conventions
-- tags
-- outputs
-- removal policies appropriate for each environment
-- synthesis and deployment scripts
-
-Start with the minimum infrastructure required to prove the deployment path.
-
-Run:
-
-```bash
-npm run build
-npx cdk synth
-```
-
-Then inspect the generated CloudFormation instead of treating CDK as a black box.
-
-### Verify
-
-A clean environment can synthesize the infrastructure from the repository.
-
-### Evidence
-
-- CDK application
-- Successful `cdk synth`
-- Reviewed CloudFormation output
-- Documented environment configuration
-
-### Tracking alignment
-
-- CDK / Infrastructure as Code
-- Reproduce
-- Cost Engineering
-
----
-
-## 4. Design IAM before application code
-
-### Goal
-
-Define workload permissions before Lambda handlers begin accessing AWS services.
-
-### Implement
-
-Create separate IAM roles for each workload.
-
-At minimum, distinguish:
-
-- API/business Lambda permissions
-- public visitor Lambda permissions
-- expiration Lambda permissions
-- notification worker permissions
-- deployment permissions
-
-Grant only the actions and resources required by each workload.
-
-Avoid:
-
-- `AdministratorAccess` for runtime workloads
-- broad wildcard permissions when resource-level permissions are possible
-- shared runtime roles with unrelated permissions
-- long-lived AWS access keys in CI/CD
-
-### Verify
-
-For every role, answer:
-
-1. Who assumes this role?
-2. Which AWS actions can it perform?
-3. Which resources can those actions access?
-4. What happens if the role is compromised?
-
-### Evidence
-
-- IAM policies in CDK
-- IAM review notes
-- Negative authorization tests where practical
-- ADR updates when an important tradeoff exists
-
-### Tracking alignment
-
-- IAM / Security
-- Threat Model
-- Reproduce
-
----
-
-## 5. Model DynamoDB from access patterns
-
-### Goal
-
-Design persistence from the queries and state transitions the system actually needs.
-
-### Implement
-
-Write the access patterns before finalizing the table design.
-
-The initial patterns include:
-
-1. Get a visit by access code.
-2. List visits for a resident.
-3. Find expected visits for a time window.
-4. Search by visitor name and unit.
-5. Find residents by condominium and unit.
-6. Find guards by condominium.
-7. Validate a visit safely.
-8. Expire a visit safely.
-9. Retrieve validation/history information where required.
-
-For each access pattern, define:
-
-- partition key
-- sort key
-- GSI requirements
-- cardinality
-- consistency requirements
-- pagination behavior
-- expected read/write cost
-- authorization boundary
-
-Prefer a small number of purposeful tables and indexes over entity-driven table proliferation.
-
-### Verify
-
-Every required query can be mapped to a concrete DynamoDB operation without relying on an unbounded scan.
-
-### Evidence
-
-- Access-pattern document/table
-- DynamoDB CDK definitions
-- Repository/integration tests
-- Capacity/cost reasoning
-- ADR updates for non-obvious modeling decisions
-
-### Tracking alignment
-
-- DynamoDB and Access Patterns
-- Cost Engineering
-- Security
-
----
-
-## 6. Implement authentication and API boundaries
-
-### Goal
-
-Create the authenticated API boundary before implementing business workflows.
-
-### Implement
-
-Provision:
-
-- Cognito
-- API Gateway REST API
-- authenticated routes
-- public visitor route
-- CORS policy
-- API throttling where appropriate
-
-Establish the authorization model:
-
-- residents can access their own visits
-- guards can access visits within their condominium
-- administrators have the documented administrative scope
-- public visitors receive only the minimum information required
-
-Initial API surface:
+Use this status notation when reviewing:
 
 ```text
-POST /auth/register
-POST /visits
-GET /visits
-DELETE /visits/:id
-POST /visits/validate
-GET /visits/expected
-POST /visits/search
-GET /public/visits/:code
+[ ] Pending
+[x] Verified
+[~] Implemented but evidence/review is still missing
 ```
 
-### Verify
-
-Test valid and invalid JWTs, authenticated route isolation, and public/private data boundaries.
-
-### Evidence
-
-- Cognito configuration
-- API Gateway/CDK definitions
-- Authorization tests
-- API contract documentation
-
-### Tracking alignment
-
-- Cognito + API Gateway
-- IAM / Security
-- Threat Model
+Do not mark a capability complete until the relevant checks and evidence have been reviewed.
 
 ---
 
-## 7. Implement the visit domain and state machine
+# Phase 1 — Cloud and Backend
 
-### Goal
+## 1. Engineering baseline
 
-Implement the smallest meaningful business capability while preserving explicit state transitions.
+### Repository and tooling
 
-### Implement
+- [ ] Repository structure is intentional and documented.
+- [ ] Node.js version is pinned or otherwise reproducible.
+- [ ] TypeScript configuration is reproducible.
+- [ ] Package manager and lockfile are defined.
+- [ ] Formatting command exists.
+- [ ] Linting command exists.
+- [ ] Type-check command exists.
+- [ ] Unit-test command exists.
+- [ ] Integration-test command exists.
+- [ ] Build command exists.
+- [ ] CDK synth command exists.
+- [ ] Required local tools are documented.
+- [ ] No AWS credentials or secrets are committed.
 
-Create the visit lifecycle:
+### Review together
+
+- [ ] A clean checkout can install dependencies.
+- [ ] A clean checkout can run the complete local validation suite.
+- [ ] The CDK application can load without requiring undocumented local configuration.
+
+**Evidence:** scripts, configuration files, clean-checkout test.
+
+---
+
+## 2. AWS account foundation
+
+### Account safety
+
+- [ ] Root account MFA is enabled.
+- [ ] Normal development does not use the root account.
+- [ ] The intended AWS identity can be verified with `aws sts get-caller-identity`.
+- [ ] Primary AWS region is documented.
+- [ ] Development/staging/production environment strategy is documented.
+- [ ] Billing visibility is configured.
+- [ ] Cost alerts/budgets appropriate for the project are configured.
+- [ ] Disposable-resource cleanup procedure is defined.
+- [ ] AWS account identifiers are not unnecessarily committed to source control.
+
+### Review together
+
+- [ ] We can explain which AWS identity is used for each operation.
+- [ ] We can intentionally create and destroy a disposable resource.
+- [ ] We know how to detect unexpected project spending.
+
+**Evidence:** AWS configuration, CLI identity, billing controls, environment documentation.
+
+---
+
+## 3. CDK / Infrastructure as Code foundation
+
+### Infrastructure
+
+- [ ] CDK application is bootstrapped where required.
+- [ ] Stack/environment boundaries are defined.
+- [ ] Environment configuration is explicit.
+- [ ] Resource naming convention exists.
+- [ ] Resource tags are defined.
+- [ ] Outputs are defined where useful.
+- [ ] Removal policies are intentional.
+- [ ] `cdk synth` succeeds.
+- [ ] Generated CloudFormation has been inspected.
+- [ ] `cdk diff` is understood before deployment.
+- [ ] Deployment is possible from the repository.
+- [ ] Destruction behavior is understood for disposable environments.
+
+### Review together
+
+- [ ] We can explain what CDK creates.
+- [ ] We can identify resources that must survive stack deletion.
+- [ ] We can identify resources that are safe to destroy.
+- [ ] We can reproduce the infrastructure without manual console configuration.
+
+**Evidence:** CDK code, synthesized template, deployment/destroy test.
+
+---
+
+## 4. IAM and security foundation
+
+### Workload identities
+
+- [ ] API/business Lambda has its own runtime permissions.
+- [ ] Public visitor workload has only required permissions.
+- [ ] Expiration workload has only required permissions.
+- [ ] Notification worker has only required permissions.
+- [ ] Deployment identity is separate from runtime identities.
+- [ ] Runtime workloads do not use `AdministratorAccess`.
+- [ ] Wildcard actions are avoided where practical.
+- [ ] Wildcard resources are avoided where practical.
+- [ ] CI/CD does not require long-lived AWS access keys.
+- [ ] Secrets are not embedded in source code or infrastructure definitions.
+
+### Review each role
+
+- [ ] We know who assumes the role.
+- [ ] We know every AWS action it can perform.
+- [ ] We know every resource it can access.
+- [ ] We have considered the impact of role compromise.
+- [ ] We have tested at least one meaningful denied operation.
+
+**Evidence:** CDK IAM definitions, policy review, authorization tests.
+
+---
+
+## 5. DynamoDB access-pattern design
+
+### Access patterns
+
+- [ ] Get visit by access code is defined.
+- [ ] List resident visits is defined.
+- [ ] Find expected visits by time window is defined.
+- [ ] Search visitor by name/unit is defined.
+- [ ] Find resident by condominium/unit is defined.
+- [ ] Find guard by condominium is defined.
+- [ ] Validate visit is defined.
+- [ ] Expire visit is defined.
+- [ ] Validation/history retrieval is defined where required.
+
+### Physical model
+
+- [ ] Every access pattern maps to a concrete DynamoDB operation.
+- [ ] Partition keys are intentional.
+- [ ] Sort keys are intentional.
+- [ ] GSIs are justified by access patterns.
+- [ ] Cardinality is understood.
+- [ ] Consistency requirements are understood.
+- [ ] Pagination behavior is defined.
+- [ ] Query vs. scan behavior is understood.
+- [ ] Conditional writes are used where state integrity requires them.
+- [ ] Transaction requirements are identified.
+- [ ] Idempotency requirements are identified.
+- [ ] Expected read/write cost is understood.
+- [ ] Authorization boundaries are reflected in the data-access design.
+
+### Review together
+
+- [ ] We can explain why every table/index exists.
+- [ ] We can explain what happens as traffic grows.
+- [ ] We can identify any query that could accidentally become an unbounded scan.
+
+**Evidence:** access-pattern table, CDK model, integration tests, ADR.
+
+---
+
+## 6. Cognito and API Gateway
+
+### Authentication
+
+- [ ] Cognito user pool is defined.
+- [ ] Registration flow is defined.
+- [ ] Authentication flow is tested.
+- [ ] Invalid credentials are handled safely.
+- [ ] Token validation is enforced at the API boundary.
+- [ ] Token claims used for authorization are understood.
+
+### API
+
+- [ ] `POST /auth/register` is defined.
+- [ ] `POST /visits` is defined.
+- [ ] `GET /visits` is defined.
+- [ ] `DELETE /visits/:id` is defined.
+- [ ] `POST /visits/validate` is defined.
+- [ ] `GET /visits/expected` is defined.
+- [ ] `POST /visits/search` is defined.
+- [ ] `GET /public/visits/:code` is defined.
+- [ ] Authenticated and public routes are explicitly separated.
+- [ ] CORS behavior is intentional.
+- [ ] API throttling/rate limiting strategy is defined.
+- [ ] API error responses are consistent.
+- [ ] Sensitive information is not returned unnecessarily.
+
+### Authorization review
+
+- [ ] Resident can access only permitted visits.
+- [ ] Guard can access only permitted condominium data.
+- [ ] Administrator scope is explicit.
+- [ ] Public visitor receives only minimum required information.
+- [ ] Cross-resident access test exists.
+- [ ] Cross-condominium access test exists.
+
+**Evidence:** Cognito/CDK configuration, API tests, authorization tests.
+
+---
+
+## 7. Visit domain and state machine
+
+### Domain
+
+- [ ] Visit creation is implemented.
+- [ ] Access-code generation is implemented.
+- [ ] Expected visit time is stored.
+- [ ] Expiration time is stored.
+- [ ] Ownership rules are implemented.
+- [ ] Cancellation is implemented.
+- [ ] Terminal states are enforced.
+
+### State transitions
+
+- [ ] `PENDING -> VALIDATED` is valid.
+- [ ] `PENDING -> REJECTED` is valid.
+- [ ] `PENDING -> CANCELLED` is valid.
+- [ ] `PENDING -> EXPIRED` is valid.
+- [ ] Invalid state transitions are rejected.
+- [ ] Terminal states cannot be modified incorrectly.
+- [ ] Boundary conditions around expected/expiration time are tested.
+
+### Review together
+
+- [ ] We can explain every state.
+- [ ] We can explain who is allowed to trigger every transition.
+- [ ] We can explain what happens when two operations target the same visit.
+
+**Evidence:** domain code, unit tests, integration tests, state documentation.
+
+---
+
+## 8. Public visitor flow
+
+### Visitor endpoint
+
+- [ ] Valid access code returns the intended minimum information.
+- [ ] Invalid access code is handled safely.
+- [ ] Expired access code is handled safely.
+- [ ] Malformed access code is handled safely.
+- [ ] Public response contains no secrets.
+- [ ] Public response contains no unnecessary PII.
+- [ ] Internal identifiers are not exposed unnecessarily.
+- [ ] Access code has sufficient unpredictability.
+- [ ] Public endpoint abuse protection is defined.
+
+### Visitor web
+
+- [ ] Static assets are deployed to S3.
+- [ ] CloudFront distribution is defined.
+- [ ] HTTPS is enabled.
+- [ ] Cache behavior is intentional.
+- [ ] QR code is displayed correctly.
+- [ ] Invalid/expired states are user-visible.
+- [ ] Basic responsive behavior is verified.
+
+### Review together
+
+- [ ] We can explain why the access code acts as a bearer capability.
+- [ ] We can explain what an attacker can do with a leaked code.
+- [ ] We can explain what information remains protected even with a leaked code.
+
+**Evidence:** public API tests, S3/CloudFront deployment, security review.
+
+---
+
+## 9. Concurrency-safe visit validation
+
+### Validation
+
+- [ ] Guard authorization is verified.
+- [ ] Visit eligibility is verified.
+- [ ] State transition is atomic.
+- [ ] Conditional write or transaction is used where required.
+- [ ] Duplicate validation cannot corrupt state.
+- [ ] Repeated validation has deterministic behavior.
+- [ ] Validation record creation is consistent with the chosen design.
+- [ ] Validation/expiration race is handled safely.
+
+### Review together
+
+- [ ] Two validation requests sent nearly simultaneously have a defined outcome.
+- [ ] We have an automated test for repeated/concurrent validation.
+- [ ] We can explain the DynamoDB consistency mechanism being used.
+
+**Evidence:** conditional expression/transaction, concurrency test, failure behavior documentation.
+
+---
+
+## 10. SQS, worker, and DLQ
+
+### Queue architecture
+
+- [ ] Validation does not depend on notification delivery completing synchronously.
+- [ ] SQS queue exists through CDK.
+- [ ] Visibility timeout is intentional.
+- [ ] Retry behavior is intentional.
+- [ ] DLQ exists.
+- [ ] Redrive behavior is understood.
+- [ ] Worker has least-privilege permissions.
+- [ ] Worker is idempotent.
+- [ ] Message schema is explicit.
+- [ ] Malformed messages have defined behavior.
+
+### Failure checks
+
+- [ ] Worker failure causes retry.
+- [ ] Repeated failure eventually reaches DLQ.
+- [ ] Duplicate message does not create duplicate side effects.
+- [ ] Transient provider failure is retried.
+- [ ] Permanent failure is handled without infinite retry.
+- [ ] DLQ produces an observable signal.
+- [ ] Redrive procedure is documented.
+
+### Review together
+
+- [ ] We can explain at-least-once delivery implications.
+- [ ] We can explain why the worker must be idempotent.
+- [ ] We can recover a failed message.
+
+**Evidence:** SQS/DLQ CDK, worker tests, failure experiment, runbook.
+
+---
+
+## 11. EventBridge Scheduler and expiration
+
+### Scheduling
+
+- [ ] One-time schedule is created for each expiration.
+- [ ] Schedule target is explicit.
+- [ ] Schedule execution permissions are least privilege.
+- [ ] Expiration operation verifies current state.
+- [ ] Expiration uses an atomic/conditional transition where required.
+- [ ] Delayed execution is safe.
+- [ ] Duplicate execution is safe.
+- [ ] Validated visits are not incorrectly expired.
+- [ ] Cancelled/rejected visits are not incorrectly expired.
+- [ ] Schedule cleanup is defined.
+- [ ] Schedule failures are observable.
+
+### Review together
+
+- [ ] We can explain why Scheduler is used instead of application polling.
+- [ ] We can explain why DynamoDB TTL is not being used as the business-state transition mechanism.
+- [ ] We can explain what happens if expiration runs late.
+
+**Evidence:** Scheduler CDK, expiration Lambda, race tests, failure experiment.
+
+---
+
+## 12. Observability
+
+### Logging
+
+- [ ] Logs are structured JSON.
+- [ ] Request ID is available.
+- [ ] Correlation ID is available where needed.
+- [ ] Operation ID is available where useful.
+- [ ] Function/workload identity is available.
+- [ ] Outcome is recorded.
+- [ ] Duration is recorded where relevant.
+- [ ] Error category is recorded.
+- [ ] Credentials are never logged.
+- [ ] Tokens are never logged.
+- [ ] Secrets are never logged.
+- [ ] Unnecessary PII is not logged.
+
+### Metrics
+
+- [ ] Visits created metric exists.
+- [ ] Visits validated metric exists.
+- [ ] Visits rejected metric exists.
+- [ ] Visits expired metric exists.
+- [ ] Validation latency is measurable.
+- [ ] API latency is measurable.
+- [ ] API 5xx is measurable.
+- [ ] Lambda errors are measurable.
+- [ ] Lambda duration is measurable.
+- [ ] Lambda throttles are measurable.
+- [ ] SQS processing failures are measurable.
+- [ ] DLQ messages are measurable.
+
+### Operations
+
+- [ ] Technical dashboard exists.
+- [ ] Business dashboard exists where useful.
+- [ ] Actionable alarms exist.
+- [ ] Alarm thresholds are intentional.
+- [ ] Alarm behavior has been tested.
+
+### Review together
+
+- [ ] We can investigate a failed request from logs.
+- [ ] We can connect related operations using correlation information.
+- [ ] We can distinguish technical failure from expected business rejection.
+- [ ] We can identify when the system recovered.
+
+**Evidence:** logs, metrics, dashboards, alarms, incident investigation.
+
+---
+
+## 13. Automated testing
+
+### Unit
+
+- [ ] Domain rules are tested.
+- [ ] State transitions are tested.
+- [ ] Access-code generation is tested.
+- [ ] Authorization decisions are tested.
+- [ ] Validation rules are tested.
+
+### Integration
+
+- [ ] DynamoDB persistence is tested.
+- [ ] Conditional writes are tested.
+- [ ] SQS behavior is tested.
+- [ ] Worker processing is tested.
+- [ ] Relevant Cognito/API behavior is tested.
+
+### End-to-end
+
+- [ ] Resident creates visit.
+- [ ] Visitor opens public URL.
+- [ ] Guard validates visit.
+- [ ] Notification is queued.
+- [ ] Worker processes notification.
+- [ ] Expiration occurs when applicable.
+
+### Security
+
+- [ ] Invalid JWT is rejected.
+- [ ] Cross-resident access is rejected.
+- [ ] Cross-condominium access is rejected.
+- [ ] Invalid public code is handled.
+- [ ] Expired public code is handled.
+- [ ] Duplicate validation is safe.
+- [ ] Concurrent validation is safe.
+
+### AWS compatibility
+
+- [ ] LocalStack is used only where useful.
+- [ ] Important AWS-specific behavior is tested against real AWS.
+- [ ] Tests do not create false confidence by mocking every AWS behavior.
+
+**Evidence:** test suites, CI results, coverage, AWS staging validation.
+
+---
+
+## 14. CI/CD
+
+### Pull request validation
+
+- [ ] Formatting check runs.
+- [ ] Lint runs.
+- [ ] Type check runs.
+- [ ] Unit tests run.
+- [ ] Integration tests run where appropriate.
+- [ ] Build runs.
+- [ ] CDK synth runs.
+
+### Deployment
+
+- [ ] CI/CD authenticates using short-lived AWS credentials.
+- [ ] GitHub Actions OIDC is used where appropriate.
+- [ ] Deployment permissions are separated from runtime permissions.
+- [ ] Environment selection is explicit.
+- [ ] Infrastructure is synthesized during deployment.
+- [ ] Deployment outputs are captured.
+- [ ] Post-deployment validation exists.
+- [ ] Rollback procedure is documented.
+- [ ] No AWS access keys are stored in the repository.
+
+### Review together
+
+- [ ] A new environment can be created without hidden manual configuration.
+- [ ] We can identify exactly which Git commit produced a deployment.
+- [ ] We can recover from a failed deployment.
+
+**Evidence:** workflows, OIDC configuration, deployment logs, rollback test.
+
+---
+
+## 15. Failure laboratory
+
+For each experiment, do not mark the check complete until we can answer:
+
+**Failure → Detection → Impact → Recovery → Prevention**
+
+### Experiments
+
+- [ ] Lambda execution failure.
+- [ ] SQS consumer failure.
+- [ ] DLQ routing.
+- [ ] Duplicate SQS message.
+- [ ] Duplicate visit validation.
+- [ ] Validation/expiration race.
+- [ ] API throttling.
+- [ ] Invalid JWT.
+- [ ] DynamoDB conditional-write failure.
+- [ ] Partial notification failure.
+- [ ] External notification dependency unavailable.
+
+### Review together
+
+For every experiment:
+
+- [ ] Failure was intentionally reproduced.
+- [ ] Failure was observable.
+- [ ] Impact was understood.
+- [ ] Recovery was performed.
+- [ ] Prevention or mitigation was identified.
+- [ ] Evidence was recorded.
+- [ ] Architecture was changed if the experiment exposed a design flaw.
+
+**Evidence:** failure-lab records, CloudWatch evidence, runbooks, tests.
+
+---
+
+## 16. Threat model and security review
+
+### Threat model
+
+- [ ] Assets are identified.
+- [ ] Actors are identified.
+- [ ] Trust boundaries are identified.
+- [ ] Public attack surfaces are identified.
+- [ ] Authentication boundaries are identified.
+- [ ] Authorization boundaries are identified.
+- [ ] Access-code abuse is considered.
+- [ ] QR-code abuse is considered.
+- [ ] API abuse is considered.
+- [ ] PII exposure is considered.
+- [ ] Log exposure is considered.
+- [ ] CI/CD permissions are reviewed.
+- [ ] AWS credential exposure is reviewed.
+- [ ] Dependency risks are considered.
+
+### Review together
+
+- [ ] Every important threat has a mitigation.
+- [ ] Detection is defined where appropriate.
+- [ ] Residual risk is documented.
+- [ ] Security assumptions are reflected in tests.
+
+**Evidence:** threat model, IAM review, security tests, ADRs.
+
+---
+
+## 17. Cost engineering
+
+### Service review
+
+- [ ] DynamoDB cost drivers are understood.
+- [ ] Lambda cost drivers are understood.
+- [ ] API Gateway cost drivers are understood.
+- [ ] SQS cost drivers are understood.
+- [ ] S3 cost drivers are understood.
+- [ ] CloudFront cost drivers are understood.
+- [ ] CloudWatch log costs are understood.
+- [ ] Notification delivery costs are understood.
+- [ ] Environment-specific costs are understood.
+- [ ] Scaling assumptions are documented.
+- [ ] Logging retention is intentional.
+- [ ] Current AWS pricing assumptions are verified when making real decisions.
+- [ ] Free Tier assumptions are not treated as permanent guarantees.
+
+### Review together
+
+- [ ] We can explain what would make the project more expensive.
+- [ ] We can identify the first likely cost drivers at higher traffic.
+- [ ] We can explain relevant architectural cost tradeoffs.
+
+**Evidence:** cost notes, billing alerts, Cost Explorer observations, scaling scenarios.
+
+---
+
+# Phase 1 Release Gate
+
+Do not start React Native Phase 2 until all applicable checks below have been reviewed.
+
+## Infrastructure
+
+- [ ] Infrastructure is deployable from CDK.
+- [ ] Infrastructure can be reproduced from the repository.
+- [ ] Environment configuration is explicit.
+- [ ] Destruction behavior is understood.
+
+## Security
+
+- [ ] Authentication works.
+- [ ] Authorization boundaries are tested.
+- [ ] IAM follows least privilege.
+- [ ] Public endpoint exposes minimum information.
+- [ ] Secrets are protected.
+- [ ] Threat model has been reviewed.
+
+## Backend
+
+- [ ] DynamoDB access patterns are implemented.
+- [ ] Visit lifecycle is implemented.
+- [ ] Validation is concurrency-safe.
+- [ ] Expiration is concurrency-safe.
+- [ ] Notifications are asynchronous.
+- [ ] Retry/DLQ behavior works.
+
+## Operations
+
+- [ ] Structured logging works.
+- [ ] Metrics exist.
+- [ ] Dashboards exist where appropriate.
+- [ ] Alarms are actionable.
+- [ ] Failure experiments have been executed.
+- [ ] Recovery procedures are documented.
+
+## Quality
+
+- [ ] Unit tests pass.
+- [ ] Integration tests pass.
+- [ ] End-to-end path passes.
+- [ ] Security tests pass.
+- [ ] Important AWS-specific behavior has been tested on AWS.
+
+## Delivery
+
+- [ ] CI validates pull requests.
+- [ ] CI/CD can deploy the system.
+- [ ] Deployment uses short-lived credentials.
+- [ ] Rollback procedure is documented.
+- [ ] Deployment is traceable to a Git commit.
+
+## Cost
+
+- [ ] Main service cost drivers are understood.
+- [ ] Billing controls exist.
+- [ ] Scaling assumptions are documented.
+
+### Final Phase 1 review
+
+- [ ] Another engineer could clone the repository and understand the architecture.
+- [ ] Another engineer could provision the infrastructure.
+- [ ] Another engineer could deploy the system.
+- [ ] Another engineer could exercise the main workflow.
+- [ ] Another engineer could investigate a failure.
+- [ ] Another engineer could explain the main security decisions.
+- [ ] Another engineer could explain the main reliability decisions.
+- [ ] Another engineer could explain the main cost drivers.
+
+---
+
+# Phase 2 — React Native / Expo
+
+Phase 2 begins only after the Phase 1 release gate is satisfied.
+
+## Resident application
+
+- [ ] Cognito authentication is integrated.
+- [ ] Token lifecycle is implemented.
+- [ ] Visit creation is integrated.
+- [ ] Visit listing is integrated.
+- [ ] Visit history is integrated.
+- [ ] Visit sharing is integrated.
+- [ ] QR display is integrated.
+- [ ] Push notification handling is integrated.
+- [ ] API errors are handled.
+- [ ] Loading states are handled.
+- [ ] Retry behavior is defined.
+- [ ] Offline behavior is intentionally defined.
+
+## Guard application
+
+- [ ] Cognito authentication is integrated.
+- [ ] QR scanning is integrated.
+- [ ] Visit validation is integrated.
+- [ ] Manual visitor search is integrated.
+- [ ] Approval/rejection flow is integrated.
+- [ ] Safe error states are implemented.
+- [ ] Minimum-information display is preserved.
+- [ ] API errors are handled.
+- [ ] Retry behavior is defined.
+- [ ] Offline behavior is intentionally defined.
+
+### Phase 2 review
+
+- [ ] Mobile consumes the existing Phase 1 API.
+- [ ] Mobile does not introduce unnecessary backend coupling.
+- [ ] Client-side security assumptions are not used as server-side authorization.
+- [ ] Cloud/backend observability remains sufficient to diagnose mobile-originated requests.
+
+---
+
+# Review rule
+
+For every implementation step, use this sequence during review:
 
 ```text
-PENDING -> VALIDATED
-PENDING -> REJECTED
-PENDING -> CANCELLED
-PENDING -> EXPIRED
+1. Show the implementation.
+2. Show the infrastructure.
+3. Show the tests.
+4. Show the security boundary.
+5. Show the observability.
+6. Reproduce the important failure case.
+7. Explain the design decision.
+8. Explain the tradeoff.
+9. Confirm the evidence.
+10. Mark the checklist.
 ```
 
-Define:
+A feature is not considered complete merely because its happy path works.
 
-- visit creation
-- access-code generation
-- expected visit time
-- expiration time
-- ownership rules
-- cancellation
-- terminal-state behavior
-
-Treat state transitions as domain rules rather than allowing arbitrary status updates.
-
-### Verify
-
-Test valid transitions, invalid transitions, authorization failures, duplicate operations, and boundary conditions around expected/expiration times.
-
-### Evidence
-
-- Domain implementation
-- Unit tests
-- Integration tests
-- API tests
-- State-transition documentation
-
-### Tracking alignment
-
-- Visit Domain and State Machine
-- Testing
-- Security
-
----
-
-## 8. Implement the public visitor flow
-
-### Goal
-
-Allow a visitor to retrieve the minimum information associated with a valid access code.
-
-### Implement
-
-Create the public endpoint and static visitor web application.
-
-Use:
-
-- S3 for static assets
-- CloudFront for delivery
-- HTTPS
-- cache policies appropriate to the content
-- invalid/expired code handling
-- QR generation/display
-
-Treat the access code as a bearer capability.
-
-Do not expose:
-
-- resident credentials
-- internal identifiers unless required
-- unnecessary personal information
-- secrets
-- infrastructure configuration
-
-### Verify
-
-Test:
-
-- valid code
-- invalid code
-- expired code
-- malformed code
-- repeated requests
-- excessive request volume
-- minimum-data response
-
-### Evidence
-
-- S3/CloudFront CDK
-- Public endpoint tests
-- Visitor web
-- Security review of public payloads
-
-### Tracking alignment
-
-- Visitor Web
-- Threat Model
-- Security
-- Cost Engineering
-
----
-
-## 9. Implement guard validation as a concurrency-safe operation
-
-### Goal
-
-Make visit validation correct even when two requests arrive at nearly the same time.
-
-### Implement
-
-The validation operation must enforce the state transition atomically.
-
-Use a conditional write or transaction so that:
-
-- only a valid pending visit can become validated
-- a second validation cannot incorrectly validate the same visit again
-- the result of repeated validation is deterministic
-- the guard is authorized for the condominium
-
-Create the validation record as part of the consistency strategy where appropriate.
-
-### Verify
-
-Explicitly test concurrent or repeated validation attempts.
-
-Do not consider the endpoint complete because a single happy-path request returns HTTP 200.
-
-### Evidence
-
-- Conditional expression/transaction
-- Concurrency test
-- Authorization test
-- Documented failure behavior
-
-### Tracking alignment
-
-- DynamoDB
-- Visit Domain
-- Reliability / Failure Lab
-- Testing
-
----
-
-## 10. Introduce asynchronous notifications
-
-### Goal
-
-Separate visit validation from notification delivery.
-
-### Implement
-
-Build the flow:
+The goal is to reach:
 
 ```text
-Validation API
-      |
-      v
-     SQS
-      |
-      v
-Notification Worker
-      |
-      v
-SNS / Notification Provider
-```
-
-Configure:
-
-- queue
-- visibility timeout
-- retry behavior
-- dead-letter queue
-- worker permissions
-- idempotency strategy
-- alarms for DLQ messages and processing failures
-
-The API must not depend on successful notification delivery to complete validation.
-
-### Verify
-
-Simulate:
-
-- worker failure
-- transient provider failure
-- duplicate message delivery
-- malformed message
-- DLQ routing
-- message redrive
-
-### Evidence
-
-- SQS/DLQ CDK
-- Worker implementation
-- Integration tests
-- Failure-lab experiment
-- Recovery runbook
-
-### Tracking alignment
-
-- Asynchronous Architecture
-- Reliability / Failure Lab
-- Observability
-- IAM
-
----
-
-## 11. Implement scheduled expiration
-
-### Goal
-
-Move visit expiration from application polling into an event-driven mechanism.
-
-### Implement
-
-Use EventBridge Scheduler to create a one-time schedule for each visit expiration.
-
-The expiration operation must:
-
-- verify the visit is still eligible for expiration
-- transition it atomically
-- tolerate delayed execution
-- tolerate duplicate execution
-- avoid changing an already validated/cancelled/rejected visit
-- clean up the one-time schedule
-
-Do not create one permanent EventBridge rule per visit.
-
-### Verify
-
-Test:
-
-- normal expiration
-- already validated visit
-- already cancelled visit
-- delayed scheduler invocation
-- duplicate invocation
-- race between validation and expiration
-
-### Evidence
-
-- Scheduler CDK
-- Expiration Lambda
-- Conditional update
-- Race-condition tests
-- Failure-lab record
-
-### Tracking alignment
-
-- EventBridge Scheduler and Expiration
-- DynamoDB
-- Reliability
-- Cost Engineering
-
----
-
-## 12. Make observability part of every capability
-
-### Goal
-
-Make failures diagnosable before calling the system operational.
-
-### Implement
-
-Establish structured JSON logging with:
-
-- request ID
-- correlation ID
-- operation ID
-- workload/function name
-- relevant user identifier where appropriate
-- outcome
-- duration
-- error category
-
-Never log:
-
-- credentials
-- tokens
-- secrets
-- unnecessary sensitive personal information
-
-Create CloudWatch metrics for:
-
-- visits created
-- visits validated
-- visits rejected
-- visits expired
-- validation latency
-- API latency
-- API 5xx
-- Lambda errors
-- Lambda duration
-- Lambda throttles
-- SQS processing failures
-- DLQ messages
-
-Create separate technical and business dashboards where useful.
-
-### Verify
-
-Trigger controlled failures and confirm that an operator can determine:
-
-1. what failed
-2. when it failed
-3. which component failed
-4. the affected operation
-5. whether recovery occurred
-
-### Evidence
-
-- Structured logs
-- Metrics
-- Dashboards
-- Alarms
-- Example incident investigation
-
-### Tracking alignment
-
-- Observability and Operations
-- Reliability
-- Security
-
----
-
-## 13. Build the automated test pyramid
-
-### Goal
-
-Validate behavior at the appropriate level instead of relying only on end-to-end tests.
-
-### Implement
-
-### Unit tests
-
-Cover:
-
-- domain rules
-- state transitions
-- access-code generation
-- authorization decisions
-- validation rules
-
-### Integration tests
-
-Cover:
-
-- DynamoDB persistence
-- conditional writes
-- SQS
-- worker processing
-- Cognito/API integration where practical
-
-### End-to-end tests
-
-Exercise the complete path:
-
-```text
-Resident creates visit
-        ↓
-Visitor opens URL
-        ↓
-Guard validates
-        ↓
-Notification is queued
-        ↓
-Worker processes notification
-        ↓
-Visit expires when applicable
-```
-
-### Security tests
-
-Cover:
-
-- invalid JWT
-- cross-resident access
-- cross-condominium access
-- invalid public code
-- expired public code
-- repeated validation
-- concurrent validation
-
-Use LocalStack where it provides useful development feedback, but validate important AWS-specific behavior on real AWS environments.
-
-### Evidence
-
-- Test suites
-- CI test execution
-- Coverage report
-- AWS staging validation
-
-### Tracking alignment
-
-- Testing
-- Security
-- Reliability
-- Reproduce
-
----
-
-## 14. Automate CI/CD
-
-### Goal
-
-Make the infrastructure and application reproducible from Git.
-
-### Implement
-
-For pull requests, run at least:
-
-```text
-format check
-lint
-type check
-unit tests
-integration tests
-build
-CDK synth
-```
-
-For deployment:
-
-1. authenticate to AWS using short-lived credentials
-2. select the target environment
-3. synthesize infrastructure
-4. review/deploy the intended change
-5. run post-deployment validation
-6. expose deployment outputs
-7. retain enough evidence to diagnose failures
-
-Prefer GitHub Actions OIDC over long-lived AWS access keys.
-
-Separate development, staging, and production deployment behavior.
-
-### Verify
-
-A new environment can be deployed without manually configuring hidden resources outside the repository.
-
-### Evidence
-
-- GitHub Actions workflows
-- OIDC configuration
-- Environment configuration
-- Deployment logs
-- Rollback procedure
-
-### Tracking alignment
-
-- CI/CD
-- CDK / IaC
-- IAM / Security
-- Reproduce
-
----
-
-## 15. Run the failure laboratory
-
-### Goal
-
-Demonstrate that the system is understood under failure, not only under normal operation.
-
-### Execute controlled experiments
-
-At minimum:
-
-1. Lambda execution failure
-2. SQS consumer failure
-3. DLQ routing
-4. duplicate SQS message
-5. duplicate visit validation
-6. validation/expiration race
-7. API throttling
-8. invalid JWT
-9. DynamoDB conditional-write failure
-10. partial notification failure
-11. unavailable external notification dependency
-
-For every experiment document:
-
-```text
-Failure
-Detection
-Impact
-Recovery
-Prevention
-```
-
-### Verify
-
-Every important failure has an observable signal and a documented recovery path.
-
-### Evidence
-
-- Failure-lab records
-- CloudWatch evidence
-- Runbooks
-- Tests
-- Architecture updates where failures reveal design changes
-
-### Tracking alignment
-
-- Reliability / Failure Lab
-- Observability
-- Security
-- Testing
-
----
-
-## 16. Perform the security and threat-model review
-
-### Goal
-
-Review the complete system as an attack surface rather than reviewing security only at the authentication layer.
-
-### Review
-
-Identify:
-
-- assets
-- actors
-- trust boundaries
-- public endpoints
-- authentication boundaries
-- authorization boundaries
-- access-code abuse
-- QR-code abuse
-- API abuse
-- PII exposure
-- log exposure
-- CI/CD permissions
-- AWS credential exposure
-- dependency risks
-
-Actors include:
-
-- Resident
-- Guard
-- Visitor
-- Administrator
-- External attacker
-- AWS workload
-- CI/CD pipeline
-
-For each relevant threat, document:
-
-- attack path
-- affected asset
-- likelihood/impact considerations
-- mitigation
-- detection
-- residual risk
-
-### Evidence
-
-- Threat model
-- IAM review
-- Public API review
-- Security tests
-- Updated ADRs where necessary
-
-### Tracking alignment
-
-- Threat Model and Security Review
-- IAM / Security
-- Observability
-- CI/CD
-
----
-
-## 17. Perform cost engineering
-
-### Goal
-
-Understand what drives cost before increasing traffic or infrastructure complexity.
-
-### Review
-
-For every AWS service, identify:
-
-- fixed costs, if any
-- variable usage costs
-- primary cost driver
-- scaling behavior
-- logging/storage costs
-- assumptions behind estimates
-- environment-specific differences
-
-Pay particular attention to:
-
-- DynamoDB reads/writes
-- Lambda invocation and duration
-- API Gateway requests
-- SQS requests
-- CloudFront traffic
-- S3 storage/requests
-- CloudWatch logs and retention
-- notification delivery
-
-Do not treat Free Tier assumptions as permanent architecture guarantees. Verify current AWS pricing and account-specific eligibility when making real cost decisions.
-
-### Evidence
-
-- Cost assumptions
-- Billing alerts
-- AWS Cost Explorer observations
-- Scaling scenarios
-- Documented tradeoffs
-
-### Tracking alignment
-
-- Cost Engineering
-- AWS Foundation
-- Architecture and Design
-
----
-
-## 18. Establish the Phase 1 release gate
-
-Phase 1 is not complete when the visitor flow works.
-
-Before starting the mobile phase, confirm that the system has:
-
-- deployable infrastructure
-- authenticated API
-- authorization boundaries
-- DynamoDB access-pattern design
-- visit lifecycle
-- public visitor flow
-- concurrency-safe validation
-- asynchronous notifications
-- DLQ and retry behavior
-- scheduled expiration
-- structured observability
-- tests
-- CI/CD
-- security review
-- cost understanding
-- documented failure experiments
-- reproducible deployment
-
-Use the tracking guide to record the evidence for each capability.
-
-### Release question
-
-> Can another engineer clone the repository, understand the architecture, provision the required infrastructure, deploy the system, exercise the main workflow, observe failures, and explain the security, reliability, and cost decisions?
-
-If the answer is no, Phase 1 is still in progress.
-
----
-
-## 19. Start Phase 2 only after the cloud foundation is operational
-
-Phase 2 introduces the client applications.
-
-### Resident application
-
-Use React Native / Expo to implement:
-
-- authentication
-- visit creation
-- visit listing
-- visit history
-- visit sharing
-- QR display
-- push notification handling
-
-### Guard application
-
-Implement:
-
-- authentication
-- QR scanning
-- visit validation
-- manual visitor search
-- approve/reject interaction
-- safe error states
-- minimum-information display
-
-### Client engineering concerns
-
-Treat mobile as a client of the cloud system, not as a reason to redesign the backend.
-
-Implement:
-
-- API client
-- token management
-- error handling
-- loading states
-- retry behavior
-- offline considerations
-- push notification integration
-
-The mobile phase should consume the Phase 1 API and infrastructure rather than becoming the center of the architecture.
-
----
-
-# Recommended implementation cadence
-
-Work in small vertical increments.
-
-For each capability:
-
-1. **Design** the access pattern and trust boundary.
-2. **Implement** the smallest useful code path.
-3. **Provision** its AWS infrastructure with CDK.
-4. **Secure** the workload with least-privilege IAM.
-5. **Test** normal and failure behavior.
-6. **Instrument** logs, metrics, and alarms.
-7. **Document** important decisions and operational behavior.
-8. **Deploy** to the appropriate environment.
-9. **Exercise** the capability under controlled failure.
-10. **Record evidence** in the tracking guide.
-11. Only then move to the next capability.
-
-Avoid implementing the entire application first and adding cloud concerns afterward.
-
----
-
-# Suggested commit/PR progression
-
-A practical implementation sequence is:
-
-```text
-1. chore: bootstrap TypeScript and CDK foundation
-2. feat: add AWS account and environment configuration
-3. feat: provision IAM roles and deployment permissions
-4. feat: provision DynamoDB access-pattern foundation
-5. feat: add Cognito and API Gateway
-6. feat: implement visit domain and lifecycle
-7. feat: add public visitor endpoint and web delivery
-8. feat: add concurrency-safe visit validation
-9. feat: add SQS notification pipeline and DLQ
-10. feat: add scheduled visit expiration
-11. feat: add structured observability and alarms
-12. test: add integration and end-to-end coverage
-13. ci: add GitHub Actions deployment pipeline
-14. test: add failure laboratory scenarios
-15. docs: complete security and cost review
-```
-
-Each PR should ideally represent one coherent capability or infrastructure boundary. Keep changes small enough that architecture, security, tests, and operational behavior can be reviewed together.
-
----
-
-# Completion model
-
-A capability should progress through these states:
-
-```text
-Pending
-   ↓
-In Progress
-   ↓
 Implemented
-   ↓
+    ↓
 Understood
-   ↓
+    ↓
 Operable
-   ↓
+    ↓
 Reproducible
 ```
 
-The final state is the target.
-
-A capability that only reaches **Implemented** is functional.
-
-A capability that reaches **Reproducible** is evidence of Cloud Engineering maturity.
-
----
-
-# Relationship with the tracking guide
-
-Use the two documents together:
-
-| Document | Purpose |
-|---|---|
-| `CLOUD_ENGINEERING_TRACKING.md` | What must be demonstrated |
-| `CLOUD_ENGINEERING_IMPLEMENTATION_PLAN.md` | How and in what order to implement it |
-| ADRs | Why important architectural decisions were made |
-| Failure-lab records | What happens when the system fails |
-| Runbooks | How an operator diagnoses and recovers |
-| CI/CD workflows | How the system is reproduced and deployed |
-
-The implementation plan should evolve only when the architecture or learning sequence changes. The tracking guide remains the source of truth for capability completion.
+That final state is the actual completion criterion for the Cloud Engineering phase.
