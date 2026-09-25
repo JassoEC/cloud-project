@@ -38,6 +38,8 @@ Before asking questions about the feature, make sure you have project context:
 1. Read the project-memory file, if one exists. Try in order and stop at the first hit: `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `README.md`. This adapts the skill to whichever agent is running it (Claude Code, Codex, Gemini CLI, etc.).
 2. Look at the `specs/` listing in the session context above to see which specs already exist and how they are numbered.
 3. If previous specs exist, read at least the two most recent ones to pick up the project's conventions — including the **language** they are written in and the exact wording they use for states and section headings. A new spec must match the existing ones.
+4. Respect the repository documentation convention defined in `AGENTS.md`. For this repository, specs are written in English even when the user communicates in another language.
+5. Treat `docs/CLOUD_ENGINEERING_TRACKING.md` and `docs/CLOUD_ENGINEERING_IMPLEMENTATION_PLAN.md` as manual review frameworks. Do not mark roadmap or cloud-engineering progress automatically from the existence of a spec.
 
 If the `$ARGUMENTS` argument comes in empty, ask the user for an initial **single-sentence** description of what they want to build. If the description does not fit in one sentence, that is the first signal that the feature is too big — suggest splitting it before continuing.
 
