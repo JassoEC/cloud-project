@@ -1,297 +1,354 @@
 # Proyecto Transversal
 
-A cloud-native visit management system for residential communities, designed as a hands-on AWS Cloud Engineering laboratory and portfolio project.
+A small cloud-native visit-management system used as a **hands-on AWS learning laboratory**.
 
-## Project Mission
+The product domain is intentionally simple. The project exists to build practical cloud-engineering experience while studying for the AWS Developer Associate exam.
 
-The residential visitor-management domain is intentionally small. The engineering depth is the point.
+## Project mission
 
-This project is designed to demonstrate the ability to **design, provision, secure, operate, observe, and evolve a distributed application on AWS**.
+The goal is not to build a large application as quickly as possible.
 
-The primary learning areas are:
+The goal is to repeatedly:
 
-- Serverless architecture
-- DynamoDB access-pattern-first modeling
-- Least-privilege IAM
-- Event-driven and asynchronous processing
-- Reliability and failure handling
-- Observability
-- Infrastructure as Code
-- CI/CD
-- Security and privacy
-- Cost awareness
+1. learn an AWS concept,
+2. build a small working example,
+3. break it deliberately,
+4. inspect and fix the failure,
+5. understand the cost/security implications,
+6. document the lesson,
+7. clean up the resources.
 
-The product domain is a vehicle for exercising those capabilities.
+The application is the thread that connects those experiments. It is not a requirement to implement the whole architecture up front.
 
-> **Engineering principle:** a feature is not complete when the code works locally. It is complete when its implementation, infrastructure, security, tests, observability, failure behavior, and deployment path are understood.
+## Learning principles
 
-## Problem Domain
+### Incremental over comprehensive
 
-Residential communities often manage visitors through phone calls, WhatsApp messages, paper logs, and manual coordination.
+Only the AWS capabilities needed for the current learning milestone should be implemented.
 
-The system models a minimal digital flow:
+Future architecture is documented as backlog, not treated as a current requirement.
 
-1. A resident registers an expected visitor.
-2. The system generates an access code and public URL.
-3. The resident shares the URL with the visitor.
-4. The visitor presents the generated QR code at the entrance.
-5. A guard validates the visit.
-6. The resident receives an asynchronous notification.
+### Hands-on over ceremony
 
-A second flow supports visitors without a usable phone:
+A lab is complete when the AWS behavior is understood, not when it has accumulated every production concern.
 
-1. The guard searches by visitor name or unit.
-2. The system searches the expected-visit window.
-3. Sensitive resident information is only exposed after an exact match.
-4. If the guard cannot establish a safe match, the resident is contacted directly.
+Production-grade practices such as automated delivery, extensive observability, and multi-environment deployment are introduced when they are useful for learning them.
 
-## Architecture
+### Failure is part of the lab
 
-Phase 1 intentionally focuses on cloud/backend engineering before mobile clients are introduced.
+Important capabilities should be exercised in both working and failing states.
 
-```
-                         ┌─────────────────────┐
-                         │   Visitor Web       │
-                         │   S3 + CloudFront   │
-                         └──────────┬──────────┘
-                                    │
-Resident / Guard ────────┐         │
-                          ▼         ▼
-                    ┌───────────────────┐
-                    │    API Gateway    │
-                    │       REST        │
-                    └─────────┬─────────┘
-                              │
-                ┌─────────────┼─────────────┐
-                ▼             ▼             ▼
-          Auth / Cognito  Business      Public
-                          Lambdas       Lambda
-                              │
-                    ┌─────────┼─────────┐
-                    ▼         ▼         ▼
-                DynamoDB     SQS    Scheduler
-                              │         │
-                              ▼         ▼
-                         Notification  Expiration
-                           Worker       Lambda
-                              │         │
-                              ▼         ▼
-                             SNS     DynamoDB
-```
+Examples:
 
-Cross-cutting capabilities:
+- missing IAM permission
+- Lambda failure
+- invalid API request
+- DynamoDB conditional failure
+- SQS retry/redelivery
+- DLQ routing
 
-```
-     ┌─────────────────────────────────────────┐
-     │ IAM · CloudWatch · CDK · CI/CD · Tests │
-     └─────────────────────────────────────────┘
-```
+### Cost awareness is part of cloud engineering
 
-## AWS Responsibilities
+Every lab should make it easy to answer:
 
-| Capability | AWS service | Engineering concern |
-|---|---|---|
-| Identity | Cognito | Authentication and authorization |
-| HTTP API | API Gateway | Public/private boundaries, throttling |
-| Compute | Lambda | Stateless workloads and runtime boundaries |
-| Primary data | DynamoDB | Access-pattern-first modeling |
-| Async work | SQS | Decoupling, retries, DLQ |
-| Notifications | SNS/provider | Eventual consistency and delivery |
-| Scheduling | EventBridge Scheduler | One-time expiration events |
-| Visitor web | S3 + CloudFront | Static delivery and HTTPS |
-| Observability | CloudWatch | Logs, metrics, alarms, dashboards |
-| IaC | AWS CDK | Reproducible infrastructure |
-| Delivery | GitHub Actions | Automated validation and deployment |
-| Security | IAM | Least-privilege runtime roles |
+- What resources did I create?
+- What can cost money?
+- What can I delete now?
+- What should be monitored?
 
-## Engineering Principles
+The sandbox account is a learning budget, not a reason to keep infrastructure running.
 
-### Access patterns before tables
+## Learning path
 
-The conceptual domain model contains:
+The project grows in small milestones.
 
-- Condominium
-- Resident
-- Guard
-- Visit
-- Validation
+### Milestone 0 — AWS foundations
 
-Those objects do not imply one DynamoDB table per entity.
+Focus:
 
-The physical model must be derived from the queries and mutations required by the application. See [ADR-002](docs/adr/002-dynamodb-access-patterns.md).
+- AWS account hygiene
+- AWS CLI
+- IAM fundamentals
+- CloudWatch basics
+- billing/budget awareness
 
-### Least privilege
+Outcome:
 
-Each workload receives only the permissions it needs.
+> I can safely create, inspect, troubleshoot, and remove AWS resources.
 
-Runtime roles must not use broad administrative policies. Infrastructure deployment permissions are separated from application runtime permissions.
+### Milestone 1 — Lambda
 
-See [ADR-004](docs/adr/004-least-privilege-iam.md).
+Start with a single function.
 
-### Synchronous vs asynchronous work
+Learn:
 
-The validation API should not wait for notification delivery.
+- handler/runtime
+- execution role
+- environment variables
+- invocation
+- logs
+- errors
+- basic deployment
 
-```
-Validation API
-      │
-      ▼
-     SQS
-      │
-      ▼
-Notification Worker
-      │
-      ▼
-     SNS
-```
+Outcome:
 
-Retries and a dead-letter queue are part of the design.
+> I understand the Lambda execution model instead of only knowing its definition.
 
-See [ADR-005](docs/adr/005-asynchronous-notifications.md).
+### Milestone 2 — API Gateway + Lambda
 
-### Idempotency
+Build a minimal HTTP endpoint.
 
-Retryable operations must be safe to execute more than once.
+Learn:
 
-The implementation must explicitly handle:
+- REST API integration
+- request/response mapping
+- authentication boundary
+- API errors
+- CloudWatch troubleshooting
 
-- visit validation
-- notification processing
-- expiration
+Outcome:
 
-### Observability
+> I can expose a Lambda-backed API and diagnose a failed request.
 
-CloudWatch is not an afterthought.
+### Milestone 3 — DynamoDB
 
-The project will expose:
+Persist the visit domain.
+
+Start with only the access patterns required by the current API.
+
+Learn:
+
+- partition/sort keys
+- Query vs Scan
+- conditional writes
+- indexes when justified
+- consistency
+- capacity/cost basics
+
+Outcome:
+
+> I can model DynamoDB from access patterns and explain why the key design exists.
+
+### Milestone 4 — IAM and Cognito
+
+Introduce authenticated resident/guard operations.
+
+Learn:
+
+- IAM roles and policies
+- Lambda permissions
+- least privilege
+- authentication vs authorization
+- Cognito integration
+
+Outcome:
+
+> I can explain who is allowed to do what and where that permission is enforced.
+
+### Milestone 5 — S3 and visitor web
+
+Add a minimal visitor-facing web surface.
+
+Learn:
+
+- object storage
+- private/public boundaries
+- presigned access where appropriate
+- static delivery
+- CloudFront fundamentals
+
+Outcome:
+
+> I understand the difference between storing content and serving content.
+
+### Milestone 6 — SQS and asynchronous processing
+
+Move notification work off the synchronous API path.
+
+Learn:
+
+- queues
+- consumers
+- retries
+- visibility timeout
+- DLQs
+- idempotency
+
+Outcome:
+
+> I can design and troubleshoot a small asynchronous workflow.
+
+### Milestone 7 — EventBridge Scheduler
+
+Add visit expiration.
+
+Learn:
+
+- scheduled invocation
+- delayed work
+- race conditions
+- idempotent state transitions
+
+Outcome:
+
+> I understand when scheduled work is preferable to synchronous request handling.
+
+### Milestone 8 — CDK
+
+Once the core resources are familiar, reproduce them with infrastructure as code.
+
+Learn:
+
+- CDK constructs
+- stacks
+- configuration
+- CloudFormation lifecycle
+- synth/deploy/destroy
+
+Outcome:
+
+> I can reproduce the lab environment instead of relying on console clicks.
+
+### Milestone 9 — Observability and failure exercises
+
+Add only the telemetry needed to operate the current system.
+
+Learn:
 
 - structured logs
-- correlation/request IDs
-- API latency
-- API 5xx rate
-- Lambda errors and duration
-- throttling
-- validation latency
-- visits created/validated/rejected/expired
-- notification failures
-
-See [ADR-006](docs/adr/006-observability.md).
-
-### Infrastructure as Code
-
-AWS infrastructure is provisioned through CDK.
-
-Manual console configuration may be used while learning or investigating, but the repository must remain capable of reproducing the environment.
-
-### Failure is part of the design
-
-The project will deliberately exercise scenarios such as:
-
-- SQS redelivery
-- notification worker failure
-- DLQ routing
-- duplicate validation
-- expiration races
-- Lambda errors/throttling
-- public endpoint abuse
-
-## Phase 1 — Cloud + Backend
-
-Phase 1 is complete without React Native.
-
-### Milestone 1 — Foundation
-
-- CDK project
-- AWS account/bootstrap strategy
-- TypeScript runtime
-- Cognito
-- API Gateway
-- DynamoDB access-pattern design
-- IAM roles
-- automated tests
-
-### Milestone 2 — Visit lifecycle
-
-- Register visit
-- Generate secure access code
-- Retrieve own visits
-- Cancel pending visit
-- Public visit lookup
-- Authorization boundaries
-
-### Milestone 3 — Visitor web
-
-- Static visitor page
-- S3
-- CloudFront
-- HTTPS/custom domain when appropriate
-- QR generation
-- Public API protection
-
-### Milestone 4 — Guard workflows
-
-- QR validation
-- Alternative search
-- condominium scoping
-- exact-match privacy rules
-- atomic/idempotent validation
-
-### Milestone 5 — Event-driven behavior
-
-- SQS notification queue
-- retry policy
-- dead-letter queue
-- notification worker
-- EventBridge Scheduler expiration
-- idempotent expiration
-
-### Milestone 6 — Operability
-
-- structured logging
-- CloudWatch metrics
-- dashboards
+- metrics
 - alarms
-- failure exercises
-- operational runbooks
+- dashboards
+- troubleshooting workflows
+- failure drills
 
-### Milestone 7 — Delivery
+Outcome:
+
+> I can investigate a production-like failure using evidence from AWS.
+
+### Milestone 10 — CI/CD
+
+Automate validation and deployment after the deployment model is understood manually.
+
+Learn:
 
 - GitHub Actions
-- lint/test/build
+- test/lint/build
 - CDK synth
-- staging deployment
-- controlled production deployment
-- deployment documentation
+- deployment permissions
+- environment separation
 
-## Phase 2 — Mobile Client
+Outcome:
 
-After Phase 1 is operational:
+> I understand what the pipeline is automating because I have already performed the steps manually.
 
-- React Native / Expo resident app
-- React Native / Expo guard app
-- Cognito authentication
-- QR scanning
-- resident visit management
-- guard validation
-- push notification UX
+## Lab structure
 
-Mobile is intentionally a second phase so that the project demonstrates cloud/backend depth before client breadth.
+Small, disposable experiments belong under `labs/`.
 
-## Definition of Done
+Suggested structure:
 
-A cloud capability is complete only when it has:
+```
+labs/
+├── 01-lambda/
+├── 02-api-gateway/
+├── 03-dynamodb/
+├── 04-iam/
+├── 05-cognito/
+├── 06-s3/
+├── 07-sqs/
+├── 08-eventbridge/
+├── 09-cdk/
+└── 10-observability/
+```
 
-- application implementation
-- CDK infrastructure
-- automated tests
-- least-privilege IAM
-- observability
-- documented failure behavior
-- relevant ADR
-- reproducible deployment
+A lab may be completed in one or a few study sessions. It does not need to become production code.
+
+The main application should only absorb a capability after the underlying AWS behavior has been understood.
+
+## Definition of done for a learning milestone
+
+A milestone is complete when I can:
+
+- explain the problem the AWS service solves,
+- create and use the service,
+- integrate it with the application or a focused lab,
+- reproduce at least one meaningful failure,
+- diagnose and fix that failure,
+- identify the important security boundary,
+- identify the main cost driver,
+- clean up the resources,
+- document what I learned.
+
+Not every milestone needs:
+
+- a production-grade CI/CD pipeline,
+- multiple environments,
+- exhaustive E2E coverage,
+- a dashboard,
+- a custom domain,
+- an ADR.
+
+Those concerns are introduced when they become the subject of the lesson.
+
+## Deferred scope
+
+The original architecture remains useful as a **future target**, but it is not the current implementation plan.
+
+The following are explicitly deferred until the learning path reaches them:
+
+- full visitor lifecycle
+- multiple DynamoDB GSIs and advanced access patterns
+- complete guard workflows
+- notification provider integration
+- expiration orchestration
+- production observability
+- staging/production environments
+- Route 53 / ACM
+- GitHub Actions deployment
+- React Native clients
+- advanced threat modeling
+- portfolio hardening
+
+Existing specifications and ADRs can be used as reference material, but they do not create implementation obligations for the current milestone.
+
+## Relationship to DVA preparation
+
+The Udemy course is the conceptual track.
+
+This repository is the practical track.
+
+The intended loop is:
+
+```
+Course topic
+    ↓
+Small AWS lab
+    ↓
+Apply it to cloud-project
+    ↓
+Break it
+    ↓
+Fix it
+    ↓
+Document the lesson
+    ↓
+Practice exam questions
+    ↓
+Next topic
+```
+
+The project should therefore evolve with the course instead of becoming a separate large project competing for study time.
+
+## Current status
+
+🚧 **Learning-path refactor**
+
+The architecture and product specifications contain a larger future scope. This branch narrows the active scope so the repository can be used as a sustainable AWS learning laboratory.
 
 ## Documentation
 
+- [Learning Path](docs/LEARNING_PATH.md)
 - [Engineering Focus](docs/ENGINEERING_FOCUS.md)
 - [Technical Specifications](docs/SPECIFICATIONS.md)
 - [ADR-001 Serverless Architecture](docs/adr/001-serverless-architecture.md)
@@ -301,21 +358,6 @@ A cloud capability is complete only when it has:
 - [ADR-005 Asynchronous Notifications](docs/adr/005-asynchronous-notifications.md)
 - [ADR-006 Observability](docs/adr/006-observability.md)
 - [ADR-007 CI/CD and Environments](docs/adr/007-ci-cd-and-environments.md)
-
-Planned documentation:
-
-- Threat model
-- DynamoDB physical key design
-- Operational runbooks
-- Cost analysis
-- Incident/failure exercise
-- CI/CD implementation guide
-
-## Current Status
-
-🚧 **Architecture refactoring phase**
-
-The product specification is established. The current work is turning it into an explicit cloud-engineering learning path before implementation begins.
 
 ## License
 
