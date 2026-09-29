@@ -413,3 +413,24 @@ The following remain future work unless a learning task explicitly introduces th
 - Full threat-modeling and portfolio hardening.
 
 These are not rejected ideas. They are deliberately deferred so that they do not interrupt the linear AWS learning path.
+
+## Progress tracker
+
+This section records reviewed progress. The score is a learning-quality indicator, not a pass/fail gate.
+
+### Scoring rubric
+
+- **10/10** — Complete evidence, accurate explanation, strong security/cost awareness, and independent diagnosis where applicable.
+- **8–9/10** — Accepted with minor omissions or small guidance needed.
+- **6–7/10** — Partial understanding; significant guidance or evidence is still required.
+- **0–5/10** — Task not yet demonstrated.
+
+### Phase 0 — Foundations
+
+| Task | Status | Score | Evidence / reviewer notes |
+|---|---|---:|---|
+| 0.1 Prepare the AWS sandbox | **ACCEPTED** | **9/10** | AWS CLI 2.37.5 installed on Ubuntu; region verified as mx-central-1; STS confirmed the active IAM identity as cloud-learning; monthly budget set to $2 USD; cleanup rules defined. Minor note: Terraform/IaC cleanup is a future practice and is not yet part of the current stack. |
+
+**0.1 response quality:** Good final understanding after iteration. The learner initially omitted several evidence fields, then independently completed CLI/STS setup and articulated explicit cost-control rules. Security posture is appropriate for the lab: CLI uses an IAM user rather than root credentials, with permissions intentionally kept minimal for the next IAM exercise.
+
+**Reviewer decision:** 0.1 is accepted. 0.2 may begin.
