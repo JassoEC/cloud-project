@@ -24,7 +24,7 @@ Scores measure learning quality and are separate from the ACCEPTED/REJECTED gate
 | Task | Status | Score |
 |---|---|---:|
 | 0.1 Prepare the AWS sandbox | **ACCEPTED** | **9/10** |
-| 0.2 IAM basics | Pending | — |
+| 0.2 IAM basics | **ACCEPTED** | **9/10** |
 
 ## Detailed reviews
 
@@ -57,3 +57,34 @@ Good final understanding after iteration. The learner initially omitted several 
 Terraform/IaC cleanup was mentioned as a future practice. It is not yet part of the current stack, so this was treated as a future intention rather than demonstrated evidence.
 
 **Reviewer decision:** 0.1 accepted; 0.2 may begin.
+
+
+### 0.2 — IAM Basics
+
+**Status:** 🟢 ACCEPTED  
+**Score:** 9/10
+
+**Evidence demonstrated**
+
+- Started with the `cloud-learning` group intentionally having no permissions.
+- Executed `aws s3 ls` and captured the expected `AccessDenied`.
+- Identified the required action: `s3:ListAllMyBuckets`.
+- Initially tested `AmazonS3ReadOnlyAccess`, then recognized it was broader than necessary.
+- Replaced the broad managed policy with a custom policy granting only `s3:ListAllMyBuckets`.
+- Re-ran `aws s3 ls` successfully; an empty result was correctly interpreted as “no buckets exist,” not as a permission failure.
+
+**Response quality**
+
+The learner correctly explained that the absence of a group policy meant there was no identity-based policy allowing the requested S3 action. The learner also understood why the narrower policy better demonstrates least privilege.
+
+**Key learning**
+
+`s3:ListAllMyBuckets` answers the account-level question “which buckets exist?” It does not grant permission to inspect objects or bucket contents. Those operations require separate permissions such as `s3:ListBucket` and `s3:GetObject`.
+
+Also clarified that `"Resource": "*"` is not being used because the account currently has no buckets. This action is account-level and uses `*` as its resource scope even when buckets exist.
+
+**Improvement noted**
+
+The first solution used `AmazonS3ReadOnlyAccess`, which was unnecessarily broad for the stated objective. Correcting it to a single required action demonstrated the intended least-privilege practice.
+
+**Reviewer decision:** 0.2 accepted; 1.1 may begin.
