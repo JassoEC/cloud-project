@@ -25,6 +25,7 @@ Scores measure learning quality and are separate from the ACCEPTED/REJECTED gate
 |---|---|---:|
 | 0.1 Prepare the AWS sandbox | **ACCEPTED** | **9/10** |
 | 0.2 IAM basics | **ACCEPTED** | **9/10** |
+| 1.1 First Lambda | **IN PROGRESS** | — |
 
 ## Detailed reviews
 
@@ -88,3 +89,40 @@ Also clarified that `"Resource": "*"` is not being used because the account curr
 The first solution used `AmazonS3ReadOnlyAccess`, which was unnecessarily broad for the stated objective. Correcting it to a single required action demonstrated the intended least-privilege practice.
 
 **Reviewer decision:** 0.2 accepted; 1.1 may begin.
+
+
+### 1.1 — First Lambda
+
+**Status:** 🟡 IN PROGRESS  
+**Score:** —
+
+**Current progress**
+
+The learner has started Task 1.1 and is currently learning the IAM role model required by Lambda before creating the function.
+
+**Concepts demonstrated so far**
+
+- Distinguished a Lambda **execution role** from the learner's IAM user.
+- Understood that the role gives the Lambda function permissions to act against other AWS services.
+- Understood that the role is assumed by Lambda rather than using the learner's CLI credentials.
+- Identified the two separate IAM concerns:
+  - **Trust policy:** who can assume the role.
+  - **Permission policies:** what the assumed role can do.
+- Recognized the principle of least privilege: the Lambda role should receive only the permissions needed by the function.
+
+**Important clarification**
+
+A Lambda execution role is not what makes the function invokable. It defines the permissions available to the function while it executes.
+
+**Pending evidence**
+
+The learner still needs to:
+
+- Create the first Lambda function.
+- Configure its execution role.
+- Invoke/test it.
+- Verify the execution result.
+- Locate and inspect its CloudWatch logs.
+- Explain the execution role and invocation flow in their own words.
+
+**Reviewer decision:** 1.1 remains in progress; no score assigned until the task evidence is submitted.
