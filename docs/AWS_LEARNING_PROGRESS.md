@@ -25,7 +25,7 @@ Scores measure learning quality and are separate from the ACCEPTED/REJECTED gate
 |---|---|---:|
 | 0.1 Prepare the AWS sandbox | **ACCEPTED** | **9/10** |
 | 0.2 IAM basics | **ACCEPTED** | **9/10** |
-| 1.1 First Lambda | **IN PROGRESS** | — |
+| 1.1 First Lambda | **ACCEPTED** | **9/10** |
 
 ## Detailed reviews
 
@@ -93,36 +93,39 @@ The first solution used `AmazonS3ReadOnlyAccess`, which was unnecessarily broad 
 
 ### 1.1 — First Lambda
 
-**Status:** 🟡 IN PROGRESS  
-**Score:** —
+**Status:** 🟢 ACCEPTED  
+**Score:** 9/10
 
-**Current progress**
+**Evidence demonstrated**
 
-The learner has started Task 1.1 and is currently learning the IAM role model required by Lambda before creating the function.
+- Created Lambda function `cloud-learning-first-lambda` using Node.js.
+- Configured an IAM execution role for Lambda with the Lambda service as the trusted principal.
+- Attached `AWSLambdaBasicExecutionRole` for basic CloudWatch Logs permissions.
+- Executed the function successfully and received `statusCode: 200` with `Hello from Lambda!`.
+- Observed execution logs including Request ID, duration, billed duration, configured memory, and maximum memory used.
+- Intentionally introduced `throw new Error("Intentional learning error")` and observed `Status: Failed`.
+- Diagnosed the failure as an application-code exception rather than an IAM permission failure.
+- Used the stack trace to identify the failure location at `index.mjs:11:9`.
+- Restored the function and verified `Status: Succeeded` again.
 
-**Concepts demonstrated so far**
+**Key learning**
 
-- Distinguished a Lambda **execution role** from the learner's IAM user.
-- Understood that the role gives the Lambda function permissions to act against other AWS services.
-- Understood that the role is assumed by Lambda rather than using the learner's CLI credentials.
-- Identified the two separate IAM concerns:
-  - **Trust policy:** who can assume the role.
-  - **Permission policies:** what the assumed role can do.
-- Recognized the principle of least privilege: the Lambda role should receive only the permissions needed by the function.
+The learner correctly connected the Lambda execution role model:
 
-**Important clarification**
+- The IAM Role is the identity Lambda can assume.
+- The trust policy determines who can assume the role.
+- Permission policies determine what the assumed role can do.
+- STS provides the mechanism for temporary role sessions/credentials.
+- Lambda manages the role assumption and temporary credentials internally.
 
-A Lambda execution role is not what makes the function invokable. It defines the permissions available to the function while it executes.
+The learner also distinguished the function's execution duration from the lifetime of the IAM Role itself.
 
-**Pending evidence**
+**Cost awareness**
 
-The learner still needs to:
+The learner observed Lambda's reported `Duration`, `Billed Duration`, `Memory Size`, and `Max Memory Used` values during testing.
 
-- Create the first Lambda function.
-- Configure its execution role.
-- Invoke/test it.
-- Verify the execution result.
-- Locate and inspect its CloudWatch logs.
-- Explain the execution role and invocation flow in their own words.
+**Improvement noted**
 
-**Reviewer decision:** 1.1 remains in progress; no score assigned until the task evidence is submitted.
+During diagnosis, the learner initially explained the error correctly but did not explicitly identify `index.mjs:11:9` or clearly separate the test response from the execution logs. After review, the distinction was clarified.
+
+**Reviewer decision:** 1.1 accepted; 1.2 may begin.
