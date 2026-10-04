@@ -1,28 +1,28 @@
 # Lambda with Application Code
 
-## Objetivo
+## Objective
 
-Aprender a escribir código de aplicación que pueda ejecutarse dentro de una función AWS Lambda, recibiendo un evento JSON, validando sus datos de entrada y generando una respuesta JSON.
+Learn to write application code that can run inside an AWS Lambda function, receiving a JSON event, validating its input data, and producing a JSON response.
 
-## Flujo
+## Flow
 
 ```text
 Mock JSON Event
       ↓
    Lambda
       ↓
-Validación del input
+ Input validation
       ↓
-Procesamiento
+ Processing
       ↓
-Respuesta JSON
+ JSON response
 ```
 
 ## Input
 
-El evento de prueba será un objeto JSON generado manualmente desde **Lambda Test Events**.
+The test event will be a JSON object generated manually from **Lambda Test Events**.
 
-Ejemplo:
+Example:
 
 ```json
 {
@@ -31,30 +31,45 @@ Ejemplo:
 }
 ```
 
-## Comportamiento esperado
+## Expected behavior
 
-La función deberá:
+The function should:
 
-1. Recibir el evento JSON.
-2. Validar que existan los campos esperados.
-3. Procesar los datos recibidos.
-4. Generar una respuesta JSON indicando el resultado de la validación.
+1. Receive the JSON event.
+2. Validate that the expected fields exist.
+3. Process the received data.
+4. Produce a JSON response indicating the result of the validation.
 
-## Límites del laboratorio
+## Lab boundaries
 
-Este ejercicio utiliza únicamente **AWS Lambda**.
+This exercise uses **AWS Lambda** only.
 
-No se utilizarán todavía:
+The following will not be used yet:
 
 * API Gateway
 * DynamoDB
 * S3
 * Aurora
-* MongoDB u otra base de datos
-* Persistencia de datos
-* Autenticación
-* Monitoreo o logging adicional
-* Infraestructura como código
+* MongoDB or another database
+* Data persistence
+* Authentication
+* Additional monitoring or logging
+* Infrastructure as code
 
-Los datos utilizados serán únicamente **mock/test data** proporcionados mediante Lambda Test Events.
+The data used will be **mock/test data** only, provided via Lambda Test Events.
 
+## Troubleshooting
+
+- Runtime.UserCodeSyntaxError
+
+The code does not even execute because it fails at "compile" time, and the process stops.
+
+- ReferenceError
+
+Occurs when, even though the syntax is correct, a variable that does not exist or is not declared within scope is referenced.
+
+- Validation error with Status: Succeeded
+
+The syntax is correct and there are no wrong references, but the added validations catch an error in the event format, a missing key, or an invalid type.
+
+All of them can be identified by reviewing the execution status and the logs written by the function.
