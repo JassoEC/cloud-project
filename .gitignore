@@ -1,0 +1,5 @@
+# Packaging artifacts for Lambda uploads
+*.zip
+
+# OS files
+.DS_Store
