@@ -321,6 +321,8 @@ Also understand the difference between:
 
 You can inspect a request and explain how it travels from API Gateway to Lambda and how identity and authorization are determined.
 
+**Current evidence:** Task 2.1 demonstrated an HTTP API with `GET /visitors` integrated with Lambda, external HTTP invocation, query-string propagation into the Lambda event, and CloudWatch correlation through the Lambda Request ID. Authentication/authorization and Cognito remain future work.
+
 ---
 
 # 6. Visit Domain and State Machine
@@ -1005,7 +1007,7 @@ Use this table as a progress summary:
 | IAM roles | [ ] | [ ] | [ ] | [ ] |
 | DynamoDB access patterns | [ ] | [ ] | [ ] | [ ] |
 | Cognito | [ ] | [ ] | [ ] | [ ] |
-| API Gateway | [ ] | [ ] | [ ] | [ ] |
+| API Gateway | [x] | [x] | [x] | [ ] |
 | Visit lifecycle | [ ] | [ ] | [ ] | [ ] |
 | SQS + DLQ | [ ] | [ ] | [ ] | [ ] |
 | Scheduler | [ ] | [ ] | [ ] | [ ] |

@@ -28,6 +28,7 @@ Scores measure learning quality and are separate from the ACCEPTED/REJECTED gate
 | 1.1 First Lambda | **ACCEPTED** | **9/10** |
 | 1.2 Lambda with application code | **ACCEPTED** | **10/10** |
 | 1.3 Break and diagnose Lambda | **ACCEPTED** | **10/10** |
+| 2.1 HTTP to Lambda | **ACCEPTED** | **10/10** |
 
 ## Detailed reviews
 
@@ -184,3 +185,45 @@ Excellent independent diagnosis. The learner distinguished syntax/load failures,
 This exercise provided strong practical value because each failure was deliberately introduced, predicted, observed, diagnosed, corrected, and verified. It also exposed an important operational distinction: an invalid business input can produce a successful Lambda invocation, while a code/runtime failure can produce an actual function error.
 
 **Reviewer decision:** 1.3 accepted; Phase 2 may begin.
+
+
+### 2.1 — HTTP to Lambda
+
+**Status:** 🟢 ACCEPTED  
+**Score:** 10/10
+
+**Evidence demonstrated**
+
+- Created an API Gateway HTTP API and exposed `GET /visitors`.
+- Connected the route to the existing Lambda function through a proxy integration.
+- Deployed the API and invoked it externally through its generated `execute-api` URL using `curl`.
+- Verified the complete flow: HTTP request → API Gateway → Lambda → HTTP response.
+- Verified query-string propagation through `event.queryStringParameters.id`.
+- Verified `GET /visitors?id=2` returned `200` with the matching mock visitor.
+- Verified `GET /visitors` returned `400` with `MISSING_ID`.
+- Verified `GET /visitors?id=2909867` returned `404` with `VISITOR_NOT_FOUND`.
+- Inspected CloudWatch Logs and correlated executions using the Lambda `RequestId`.
+- Observed structured logs including method, path, identifier, result, duration, billed duration, configured memory, and maximum memory used.
+- Demonstrated the debugging pattern of correlating an HTTP symptom with the Lambda execution and CloudWatch evidence.
+
+**Response quality**
+
+Excellent. The learner independently built the integration, tested multiple HTTP outcomes, and articulated the architectural meaning of API Gateway exposing Lambda as an HTTP backend without a continuously running server.
+
+**Key learning**
+
+API Gateway receives the HTTP request and produces a Lambda event. Query parameters become part of the event, and the Lambda returns a proxy-shaped response that API Gateway maps back to HTTP.
+
+Operational mental model:
+
+`HTTP symptom → request/execution correlation → CloudWatch logs → diagnosis`
+
+**Cost awareness**
+
+The learner explicitly considered idle cost and understood the usage-driven model of serverless, while recognizing CloudWatch log ingestion/storage as a potential cost driver.
+
+**Quality of exercise**
+
+Strong practical value. The learner tested success, missing input, and not-found behavior; inspected CloudWatch executions; and connected request IDs to individual Lambda runs. The exercise remained intentionally bounded to API Gateway + Lambda with mocked data.
+
+**Reviewer decision:** 2.1 accepted; 2.2 may begin.
