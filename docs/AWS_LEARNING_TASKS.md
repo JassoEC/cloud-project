@@ -70,36 +70,42 @@ Not every criterion applies identically to every task, but the learning objectiv
 
 ## 1.1 — First Lambda
 
-- [ ] Create a minimal Lambda.
-- [ ] Invoke it.
-- [ ] Pass an event.
-- [ ] Inspect the result.
-- [ ] Inspect CloudWatch Logs.
-- [ ] Remove the disposable resource.
+- [x] Create a minimal Lambda.
+- [x] Invoke it.
+- [x] Pass an event.
+- [x] Inspect the result.
+- [x] Inspect CloudWatch Logs.
+- [x] Remove the disposable resource.
 
 **Acceptance:** Explain the problem Lambda solves and what happens from invocation to completion.
 
+**Review:** ACCEPTED — 9/10. Demonstrated creation, invocation, execution role, CloudWatch logs, intentional failure, diagnosis, restoration, and verification.
+
 ## 1.2 — Lambda with application code
 
-- [ ] Add a Lambda to the repository.
-- [ ] Use a familiar runtime.
-- [ ] Receive JSON input.
-- [ ] Validate input.
-- [ ] Return a response.
-- [ ] Handle errors.
-- [ ] Produce useful logs.
+- [x] Add a Lambda to the repository.
+- [x] Use a familiar runtime.
+- [x] Receive JSON input.
+- [x] Validate input.
+- [x] Return a response.
+- [x] Handle errors.
+- [x] Produce useful logs.
 
 **Acceptance:** The Lambda behaves as a small backend component rather than a Hello World example.
 
+**Review:** ACCEPTED — 10/10. Demonstrated mock JSON input, validation, processing, structured JSON output, positive/negative tests, CloudWatch logs, and request ID correlation.
+
 ## 1.3 — Break and diagnose Lambda
 
-- [ ] Intentionally cause a Lambda failure.
-- [ ] Find the failure in CloudWatch.
-- [ ] Identify the root cause.
-- [ ] Fix it.
-- [ ] Verify the corrected execution.
+- [x] Intentionally cause a Lambda failure.
+- [x] Find the failure in CloudWatch.
+- [x] Identify the root cause.
+- [x] Fix it.
+- [x] Verify the corrected execution.
 
 **Acceptance:** Diagnose a failing Lambda without being given the location of the problem.
+
+**Review:** ACCEPTED — 10/10. Demonstrated syntax failure, runtime failure, controlled validation failures, diagnosis from status/stack/logs, restoration, and final verification. Troubleshooting findings were documented in the lab README.
 
 ---
 
