@@ -113,16 +113,17 @@ Not every criterion applies identically to every task, but the learning objectiv
 
 ## 2.1 — HTTP to Lambda
 
-- [ ] Create an API Gateway endpoint.
-- [ ] Create a GET route.
-- [ ] Connect it to Lambda.
-- [ ] Invoke it through HTTP.
-- [ ] Inspect the logs.
+- [x] Create an API Gateway endpoint.
+- [x] Create a GET route.
+- [x] Connect it to Lambda.
+- [x] Invoke it through HTTP.
+- [x] Inspect the logs.
 
 **Acceptance:** Explain the flow:
 
 HTTP request -> API Gateway -> Lambda -> HTTP response
 
+**Review:** ACCEPTED — 10/10. Created an API Gateway HTTP API with `GET /visitors`, connected it to the existing Lambda through proxy integration, deployed and invoked it through the generated `execute-api` URL, verified query-string propagation, tested successful/missing/not-found cases, and correlated HTTP requests with Lambda Request IDs and CloudWatch Logs.
 ## 2.2 — First useful endpoint
 
 Build a small endpoint related to the visitor-management domain, initially without DynamoDB.
