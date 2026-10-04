@@ -26,6 +26,8 @@ Scores measure learning quality and are separate from the ACCEPTED/REJECTED gate
 | 0.1 Prepare the AWS sandbox | **ACCEPTED** | **9/10** |
 | 0.2 IAM basics | **ACCEPTED** | **9/10** |
 | 1.1 First Lambda | **ACCEPTED** | **9/10** |
+| 1.2 Lambda with application code | **ACCEPTED** | **10/10** |
+| 1.3 Break and diagnose Lambda | **ACCEPTED** | **10/10** |
 
 ## Detailed reviews
 
@@ -129,3 +131,56 @@ The learner observed Lambda's reported `Duration`, `Billed Duration`, `Memory Si
 During diagnosis, the learner initially explained the error correctly but did not explicitly identify `index.mjs:11:9` or clearly separate the test response from the execution logs. After review, the distinction was clarified.
 
 **Reviewer decision:** 1.1 accepted; 1.2 may begin.
+
+
+### 1.2 — Lambda with application code
+
+**Status:** 🟢 ACCEPTED  
+**Score:** 10/10
+
+**Evidence demonstrated**
+
+- Built a Lambda application flow using a JSON test event as input.
+- Defined explicit input validation for `name` and `phone`.
+- Implemented structured validation errors with field, code, and message.
+- Implemented a processing step that produces an ID from `context.awsRequestId` and an ISO timestamp.
+- Returned structured JSON for both invalid and valid inputs.
+- Tested a negative case with an empty object and correctly received two `REQUIRED` validation errors.
+- Tested a positive case and verified `valid: true`, processed data, request ID correlation, and `receivedAt`.
+- Verified application logs in CloudWatch without adding external AWS services.
+
+**Response quality**
+
+Excellent. The learner demonstrated the complete path from mock JSON event → validation → processing → JSON response and could explain the role of Lambda as a small backend component without HTTP or persistence.
+
+**Reviewer note**
+
+The stored GitHub commit initially contained a syntax typo in the handler declaration, while the deployed AWS code was correct. The review explicitly distinguished repository evidence from deployed runtime evidence rather than incorrectly treating the deployed function as broken.
+
+**Reviewer decision:** 1.2 accepted; 1.3 may begin.
+
+### 1.3 — Break and diagnose Lambda
+
+**Status:** 🟢 ACCEPTED  
+**Score:** 10/10
+
+**Evidence demonstrated**
+
+- Intentionally introduced a syntax error by omitting a comma and observed `Runtime.UserCodeSyntaxError`.
+- Identified that the syntax failure occurred during module loading/compilation, before the handler could execute.
+- Intentionally introduced a reference to an undefined variable (`evt`) and observed `ReferenceError: evt is not defined`.
+- Used the stack trace to locate the failure inside `processVisit`.
+- Tested incomplete input (`phone` missing) and correctly observed a controlled validation response with `Status: Succeeded`.
+- Tested an invalid type (`phone: true`) and correctly observed `INVALID_TYPE` with `Status: Succeeded`.
+- Restored the Lambda code and verified a successful execution with correlated request ID, response data, and CloudWatch log entry.
+- Documented the troubleshooting lessons in the lab README.
+
+**Response quality**
+
+Excellent independent diagnosis. The learner distinguished syntax/load failures, runtime exceptions, and application-level validation errors instead of treating all failures as "Lambda errors." The learner also used execution status, stack traces, request IDs, and CloudWatch logs as separate pieces of evidence.
+
+**Quality of exercise**
+
+This exercise provided strong practical value because each failure was deliberately introduced, predicted, observed, diagnosed, corrected, and verified. It also exposed an important operational distinction: an invalid business input can produce a successful Lambda invocation, while a code/runtime failure can produce an actual function error.
+
+**Reviewer decision:** 1.3 accepted; Phase 2 may begin.
