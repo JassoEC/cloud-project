@@ -1,4 +1,3 @@
-// handler: index.handler | runtime: Node.js 22.x
 const NAME_MAX = 80;
 const NAME_PATTERN = /^[^\d]+$/;
 const PHONE_PATTERN = /^\d{10}$/;
@@ -44,7 +43,7 @@ const processVisit = (event, context) => ({
   receivedAt: new Date().toISOString()
 });
 
-exports const handler = async (event, context) => {
+export const handler = async (event, context) => {
   const requestId = context?.awsRequestId ?? "unknown";
   const errors = validateEvent(event);
 
@@ -59,3 +58,4 @@ exports const handler = async (event, context) => {
 
   return { valid: true, requestId, data };
 };
+
