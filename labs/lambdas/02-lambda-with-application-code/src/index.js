@@ -41,6 +41,7 @@ const processVisit = (event, context) => ({
   name: event.name.trim(),
   phone: event.phone,
   receivedAt: new Date().toISOString()
+//  someValue: evt.invalid_key // intentional exception
 });
 
 export const handler = async (event, context) => {
