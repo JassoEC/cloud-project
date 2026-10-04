@@ -1,41 +1,29 @@
-# Http to Lambda
+# HTTP to Lambda
 
-## Objetivo
+## Objective
 
-- Comprender el ciclo de vida desde que se recibe una peticion http mediante ApiGateway
-hasta la ejecuion de una Lambda function
-
+- Understand the lifecycle from receiving an HTTP request through API Gateway to the execution of a Lambda function.
 
 ## Flow
 
-- Http request detected
-
-- Handle request with a GET route
-
-- Trigger lambda function
+- Detect an HTTP request.
+- Handle the request with a GET route.
+- Trigger the Lambda function.
 
 ## Input
 
-- Query param, it acts as a simulated db identifier
+- Query parameter; it acts as a simulated database identifier.
 
+## Expected behavior
 
-## Espected behaviour
-
-- ApiGateway catch request
-
-- ApiGateway generates a event
-
-- Existing lambda hadnles event
-
-- Http valid response recived
-
+- API Gateway catches the request.
+- API Gateway generates an event.
+- The existing Lambda handles the event.
+- A valid HTTP response is received.
 
 ## Boundaries
 
-- There is not real db, is just mocked data into the function
-
-
-- No Aurota
-- No RDS
-- No dynamo
-
+- There is no real database; the data is mocked inside the function.
+- No Aurora.
+- No RDS.
+- No DynamoDB.
