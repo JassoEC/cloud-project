@@ -132,13 +132,15 @@ Example:
 
 GET /visitors
 
-- [ ] Request handling.
-- [ ] Lambda execution.
-- [ ] JSON response.
-- [ ] Appropriate status codes.
-- [ ] Error handling.
+- [x] Request handling.
+- [x] Lambda execution.
+- [x] JSON response.
+- [x] Appropriate status codes.
+- [x] Error handling.
 
 **Acceptance:** The endpoint works end-to-end and its behavior can be explained.
+
+**Review:** ACCEPTED — 10/10. The 2.1 implementation already demonstrated the complete useful endpoint: GET /visitors through API Gateway to Lambda, JSON responses, 200 success, 400 missing id, 404 visitor not found, and controlled error handling. No duplicate implementation was required.
 
 ## 2.3 — Break the API
 
