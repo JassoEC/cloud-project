@@ -28,7 +28,7 @@ Scores measure learning quality and are separate from the ACCEPTED/REJECTED gate
 | 1.1 First Lambda | **ACCEPTED** | **9/10** |
 | 1.2 Lambda with application code | **ACCEPTED** | **10/10** |
 | 1.3 Break and diagnose Lambda | **ACCEPTED** | **10/10** |
-| 2.1 HTTP to Lambda | **ACCEPTED** | **10/10** |
+| 2.1 HTTP to Lambda | **ACCEPTED** | **10/10** |\n| 2.2 First useful endpoint | **ACCEPTED** | **10/10** |
 
 ## Detailed reviews
 
@@ -227,3 +227,28 @@ The learner explicitly considered idle cost and understood the usage-driven mode
 Strong practical value. The learner tested success, missing input, and not-found behavior; inspected CloudWatch executions; and connected request IDs to individual Lambda runs. The exercise remained intentionally bounded to API Gateway + Lambda with mocked data.
 
 **Reviewer decision:** 2.1 accepted; 2.2 may begin.
+
+
+### 2.2 — First useful endpoint
+
+**Status:** 🟢 ACCEPTED  
+**Score:** 10/10
+
+**Evidence demonstrated**
+
+The implementation and evidence already collected for 2.1 also satisfy the complete 2.2 acceptance criteria:
+
+- GET /visitors handles the HTTP request through API Gateway.
+- The request executes the existing Lambda.
+- The Lambda returns structured JSON responses.
+- A successful visitor lookup returns 200.
+- Missing id returns 400 with MISSING_ID.
+- Unknown id returns 404 with VISITOR_NOT_FOUND.
+- Error behavior is controlled and observable through the HTTP response and CloudWatch Logs.
+- The learner explained the complete end-to-end behavior and correlated requests with Lambda RequestId.
+
+**Review decision:** 2.2 accepted; 2.3 may begin.
+
+**Reviewer note**
+
+2.2 is not a second implementation of the same endpoint. Its acceptance criteria were already demonstrated as part of the 2.1 exercise, so the tracker is synchronized to the evidence rather than requiring duplicate work.
