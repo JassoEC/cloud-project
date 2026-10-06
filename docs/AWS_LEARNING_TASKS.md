@@ -1,14 +1,25 @@
 # AWS Learning Task Checklist
 
+> Training intent and track definitions: [TRAINING_INTENT.md](./TRAINING_INTENT.md).
+
 ## Purpose
 
 This checklist is the linear execution plan for the AWS learning path.
 
-The project is treated as a hands-on AWS learning lab, not as a product that must be completed all at once.
+The project is treated as the hands-on **AWS Developer Core** laboratory. It is not a product that must be completed all at once, and it is not a requirement to implement every AWS service covered by the course.
 
 The active rule is:
 
-> One task at a time. Build it, break it, diagnose it, explain it, clean it up, and only then move forward.
+> One capability at a time. Learn it, build it, break it, diagnose it, explain it, clean it up, and only then move forward.
+
+Each task should also have an explicit role:
+
+- **Project:** integrated into the main application.
+- **Focus Lab:** isolated practical experiment.
+- **Contrast Lab:** compares architectural alternatives.
+- **Conceptual / Exam Practice:** breadth for DVA-C02 without unnecessary implementation.
+
+Before creating a new task, identify the Developer capability being trained, its connection to the course, the evidence expected, and the intended depth (L1 Explain, L2 Build, L3 Integrate, or L4 Diagnose).
 
 ## Review protocol
 
@@ -39,6 +50,10 @@ A task is normally accepted only when the learner can demonstrate:
 Not every criterion applies identically to every task, but the learning objective must be demonstrated rather than merely described.
 
 ---
+
+# Main Developer Core
+
+The sequence below is the critical path. Supporting infrastructure exercises such as EC2/Linux/networking/Docker may run in parallel but must not block progression unless a task explicitly depends on them.
 
 # Phase 0 — Foundations
 

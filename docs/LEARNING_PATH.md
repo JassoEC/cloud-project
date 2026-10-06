@@ -1,10 +1,16 @@
 # AWS Learning Path
 
+> Canonical intent: [TRAINING_INTENT.md](./TRAINING_INTENT.md). This document turns that intent into the active learning sequence.
+
 This document defines the active learning strategy for `cloud-project`.
+
+The critical path is the **AWS Developer Core**. The Udemy DVA-C02 course provides breadth; this path selects where that breadth becomes hands-on evidence. Infrastructure topics such as EC2, Linux, networking, and containers remain supporting/contrast labs unless a task explicitly promotes them into the application.
 
 It intentionally separates **current learning scope** from the project's eventual architecture.
 
 ## Operating rule
+
+A service is not added to the project merely because it appears in the course or target architecture. It must either develop a relevant Developer capability or be better handled as a focused/contrast lab.
 
 One milestone should be small enough to finish without turning cloud training into a second full-time project.
 
@@ -47,6 +53,10 @@ The following rules prevent scope creep:
 - When a milestone becomes too large, split it instead of expanding the definition of done.
 
 ## What counts as practical experience?
+
+For the main path, target progressive depth: L1 Explain → L2 Build → L3 Integrate → L4 Diagnose. Core Developer capabilities should reach L3/L4 where appropriate. Supporting topics can intentionally stop at L1/L2.
+
+
 
 For each service, the repository should eventually contain evidence of four things:
 
@@ -93,6 +103,15 @@ Cross-cutting
 ```
 
 It should be implemented incrementally, only as each part becomes relevant to the learning path.
+
+## Exercise classification
+
+Each course topic is classified as one of:
+
+- **Project** — integrated into `cloud-project` and backed by repository evidence.
+- **Focus Lab** — isolated AWS experiment before integration or when integration is unnecessary.
+- **Contrast Lab** — compare architectural alternatives such as Lambda vs EC2 vs containers.
+- **Conceptual / Exam Practice** — study for breadth and DVA-C02 scenarios without adding project complexity.
 
 ## DVA study loop
 
