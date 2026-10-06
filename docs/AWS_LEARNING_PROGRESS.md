@@ -31,6 +31,7 @@ Scores measure learning quality and are separate from the ACCEPTED/REJECTED gate
 | 1.2 Lambda with application code | **ACCEPTED** | **10/10** |
 | 1.3 Break and diagnose Lambda | **ACCEPTED** | **10/10** |
 | 2.1 HTTP to Lambda | **ACCEPTED** | **10/10** |\n| 2.2 First useful endpoint | **ACCEPTED** | **10/10** |
+| 2.3 Break the API | **ACCEPTED** | **10/10** |
 
 ## Detailed reviews
 
@@ -250,6 +251,37 @@ The implementation and evidence already collected for 2.1 also satisfy the compl
 - The learner explained the complete end-to-end behavior and correlated requests with Lambda RequestId.
 
 **Review decision:** 2.2 accepted; 2.3 may begin.
+
+**Reviewer note**
+
+2.2 is not a second implementation of the same endpoint. Its acceptance criteria were already demonstrated as part of the 2.1 exercise, so the tracker is synchronized to the evidence rather than requiring duplicate work.
+
+
+### 2.3 — Break the API
+
+**Status:** 🟢 ACCEPTED  
+**Score:** 10/10
+
+**Evidence demonstrated**
+
+- Intentionally introduced an initialization-time `ReferenceError` by referencing an undefined `body` variable outside the handler scope.
+- Invoked `GET /visitors?id=2` and observed `500 Internal Server Error` with `{"message":"Internal Server Error"}`.
+- Inspected CloudWatch and identified `ReferenceError: body is not defined` at `file:///var/task/index.mjs:15:13`, including the module-loading/initialization stack.
+- Corrected the Lambda and re-ran `GET /visitors?id=2`, receiving `200` with `{"data":{"id":"2","name":"Jane Doe"}}`.
+- Tested invalid input with `GET /visitors?id=asdfghjkl` and verified HTTP 400 with `INVALID_ID_FORMAT` and the message that `id` must be a valid number.
+- Tested a valid but nonexistent visitor ID with `GET /visitors?id=22222` and observed `VISITOR_NOT_FOUND`.
+- Tested a nonexistent route with `GET /visitors-test?id=22222` and observed `Not Found`.
+- Distinguished the failure layers: Lambda runtime initialization failure → 500; application input validation → 400; valid-but-missing resource → visitor-not-found behavior; nonexistent API route → API Gateway `Not Found`.
+
+**Response quality**
+
+Excellent. The learner independently reproduced the failure, used CloudWatch to identify the runtime cause and exact source location, restored the function, and verified recovery. The learner also distinguished controlled application errors from routing behavior rather than treating all failures as equivalent.
+
+**Quality of exercise**
+
+Strong practical value. The exercise extends the previous HTTP-to-Lambda work from successful request handling into failure reproduction and diagnosis, providing concrete evidence for the distinction between 400, 404, and 500 behavior and for the relationship between API Gateway, Lambda, and CloudWatch.
+
+**Reviewer decision:** 2.3 accepted; 3.1 may begin.
 
 **Reviewer note**
 
