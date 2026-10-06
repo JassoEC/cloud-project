@@ -1,10 +1,14 @@
 # Cloud Engineering Tracking Guide
 
-> The training purpose and track boundaries are defined in [TRAINING_INTENT.md](./TRAINING_INTENT.md). This document tracks capability depth and evidence.
+> The training purpose and track boundaries are defined in [TRAINING_INTENT.md](./TRAINING_INTENT.md). This document tracks capability depth and evidence.  
+> Task/evidence lifecycle: [LEARNING_TRACKING_MODEL.md](./LEARNING_TRACKING_MODEL.md).
 
 > Tracking guide for building **Proyecto Transversal** as an AWS Cloud Engineering laboratory.
 
 ## How to use this document
+
+This is a **capability view**, not a second task checklist. Task completion is authoritative in the reviewed evidence flow defined by `LEARNING_TRACKING_MODEL.md`; the tables below summarize what accepted tasks demonstrate at capability level.
+
 
 This document turns the project roadmap into a practical tracking system. The goal is not to measure how much code exists, but how much technical capability has been developed toward AWS Developer Associate readiness. Supporting infrastructure topics may be tracked separately and should not be mistaken for the main developer path.
 
