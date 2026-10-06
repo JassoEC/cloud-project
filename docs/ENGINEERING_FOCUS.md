@@ -1,14 +1,18 @@
 # Cloud Engineering Focus
 
+> See [TRAINING_INTENT.md](./TRAINING_INTENT.md) for the canonical learning purpose and relationship between the project, course, and focused exercises.
+
 ## Purpose
 
 This project is intentionally small at the product level and deep at the engineering level.
 
 The residential visitor-management domain is the vehicle for demonstrating the ability to design, provision, secure, operate, and evolve a distributed application on AWS.
 
-The primary outcome is evidence of sound engineering decisions around serverless architecture, data modeling from access patterns, least-privilege IAM, asynchronous processing, reliability, observability, infrastructure as code, CI/CD, cost awareness, security, and privacy.
+The primary outcome is evidence of AWS Developer Associate-level engineering capability: sound decisions around serverless architecture, data modeling from access patterns, least-privilege IAM, asynchronous processing, reliability, observability, infrastructure as code, CI/CD, cost awareness, security, and privacy. The product domain is the vehicle; the learning objective is the engineering capability.
 
 ## Scope
+
+This document defines engineering scope. It does not require every AWS service covered by the DVA-C02 course to become part of the application. Topics such as EC2, Linux, networking, Docker, and other alternative services may be handled as focused or contrast exercises when they improve cloud infrastructure literacy without expanding the main application unnecessarily.
 
 ### Phase 1 — Cloud + Backend
 
@@ -101,6 +105,10 @@ The project must include documented failure scenarios, such as notification work
 
 Each scenario should describe detection, expected behavior, and recovery.
 
+## Learning depth
+
+For significant capabilities, use the shared progression from [TRAINING_INTENT.md](./TRAINING_INTENT.md): Explain (L1), Build (L2), Integrate (L3), Diagnose (L4). The main developer path should prioritize L3/L4 for its core capabilities; supporting infrastructure topics may intentionally stop at a lower level.
+
 ## Definition of Done
 
 A cloud capability is complete only when it has:
@@ -123,5 +131,6 @@ Important artifacts:
 - docs/adr/
 - docs/ENGINEERING_FOCUS.md
 - docs/SPECIFICATIONS.md
+- docs/TRAINING_INTENT.md
 
 Future additions should include a threat model, runbooks, cost analysis, and an incident exercise.
