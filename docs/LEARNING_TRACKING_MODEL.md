@@ -201,6 +201,7 @@ The already accepted work remains valid:
 | 1.3 | Break and diagnose Lambda | ACCEPTED — 10/10 |
 | 2.1 | HTTP to Lambda | ACCEPTED — 10/10 |
 | 2.2 | First useful endpoint | ACCEPTED — 10/10 |
+| 2.3 | Break the API | ACCEPTED — 10/10 |
 
 These records remain historical evidence. Future tasks should follow the same Task ID → Evidence → Review → Capability flow.
 
