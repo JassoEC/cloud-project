@@ -1,6 +1,8 @@
 # Cloud Engineering Implementation Checklist
 
-This document is the step-by-step implementation checklist for Proyecto Transversal.
+> See [TRAINING_INTENT.md](./TRAINING_INTENT.md) for the training objective and [CLOUD_ENGINEERING_TRACKING.md](./CLOUD_ENGINEERING_TRACKING.md) for capability-level evidence.
+
+This document is the step-by-step implementation checklist for Proyecto Transversal. It operationalizes the AWS Developer Core; focused/contrast labs may use separate task definitions when integration into the main application is not justified.
 
 Use it together with [CLOUD_ENGINEERING_TRACKING.md](./CLOUD_ENGINEERING_TRACKING.md):
 
