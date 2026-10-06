@@ -162,14 +162,16 @@ GET /visitors
 
 ## 2.3 — Break the API
 
-- [ ] Cause a Lambda error.
-- [ ] Send invalid input.
-- [ ] Call a nonexistent endpoint.
-- [ ] Inspect HTTP responses.
-- [ ] Inspect logs.
-- [ ] Diagnose and correct the failures.
+- [x] Cause a Lambda error.
+- [x] Send invalid input.
+- [x] Call a nonexistent endpoint.
+- [x] Inspect HTTP responses.
+- [x] Inspect logs.
+- [x] Diagnose and correct the failures.
 
 **Acceptance:** Explain where each failure occurs and how it propagates to the client.
+
+**Review:** ACCEPTED — 10/10. Intentionally broke Lambda initialization with an undefined variable and observed HTTP 500; identified the `ReferenceError` and source location in CloudWatch; restored the function and verified HTTP 200. Tested invalid input with `id=asdfghjkl` and verified HTTP 400 `INVALID_ID_FORMAT`; tested a valid but nonexistent ID with `id=22222` and observed `VISITOR_NOT_FOUND`; and tested a nonexistent route with `GET /visitors-test`, observing `Not Found`. The learner distinguished internal runtime failure, controlled input validation, missing resources, and missing routes, and explained the resulting client-visible behavior.
 
 ---
 
