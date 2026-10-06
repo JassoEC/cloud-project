@@ -1,5 +1,7 @@
 # AWS Learning Progress Tracker
 
+> Task/evidence/review/capability model: [LEARNING_TRACKING_MODEL.md](./LEARNING_TRACKING_MODEL.md).
+
 This document records the learner's reviewed progress through the AWS learning path.
 
 ## Review protocol

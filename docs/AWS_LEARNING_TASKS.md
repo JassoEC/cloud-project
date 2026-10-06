@@ -1,8 +1,11 @@
 # AWS Learning Task Checklist
 
-> Training intent and track definitions: [TRAINING_INTENT.md](./TRAINING_INTENT.md).
+> Training intent and track definitions: [TRAINING_INTENT.md](./TRAINING_INTENT.md).  
+> Task identity, evidence, review, and capability mapping: [LEARNING_TRACKING_MODEL.md](./LEARNING_TRACKING_MODEL.md).
 
 ## Purpose
+
+This checklist is the canonical catalog of bounded learning tasks. Each task has one stable Task ID; evidence and review status are tracked through the model defined in `LEARNING_TRACKING_MODEL.md`.
 
 This checklist is the linear execution plan for the AWS learning path.
 
