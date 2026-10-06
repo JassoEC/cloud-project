@@ -1,12 +1,17 @@
 # AWS Learning Path
 
-> Canonical intent: [TRAINING_INTENT.md](./TRAINING_INTENT.md). This document turns that intent into the active learning sequence.
+> Canonical intent: [TRAINING_INTENT.md](./TRAINING_INTENT.md). This document turns that intent into the active learning sequence.  
+> Task/evidence/tracking model: [LEARNING_TRACKING_MODEL.md](./LEARNING_TRACKING_MODEL.md).
 
 This document defines the active learning strategy for `cloud-project`.
 
 The critical path is the **AWS Developer Core**. The Udemy DVA-C02 course provides breadth; this path selects where that breadth becomes hands-on evidence. Infrastructure topics such as EC2, Linux, networking, and containers remain supporting/contrast labs unless a task explicitly promotes them into the application.
 
 It intentionally separates **current learning scope** from the project's eventual architecture.
+
+## Role in the tracking system
+
+This document answers **what should be learned next and why**. It does not maintain an independent completion status for individual tasks. The canonical exercise definitions live in `AWS_LEARNING_TASKS.md`, and reviewed evidence flows through `AWS_LEARNING_PROGRESS.md` into capability tracking.
 
 ## Operating rule
 
